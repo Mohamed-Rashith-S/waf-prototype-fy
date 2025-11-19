@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WAF Prototype Frontend</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #f4f7f6; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        input[type="text"] { width: 70%; padding: 12px; margin-right: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; }
+        button { padding: 12px 20px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; transition: background-color 0.3s; }
+        button:hover { background-color: #2980b9; }
+        #output { border: 2px dashed #ddd; padding: 20px; min-height: 50px; margin-top: 20px; border-radius: 4px; }
+        .safe { background-color: #e8f8f5; color: #27ae60; border-color: #2ecc71; }
+        .blocked { background-color: #fcebeb; color: #c0392b; border-color: #e74c3c; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛡️ Basic WAF Prototype Test Panel</h1>
+        <p>Test the WAF's filtering capabilities. Try typing a normal search term, then try a malicious payload like `SELECT * FROM users` or `<script>alert(1)</script>`.</p>
+        
+        <input type="text" id="userInput" placeholder="Enter input here..." autofocus>
+        <button onclick="sendToWAF()">Test WAF</button>
+
+        <h2>WAF Response Log:</h2>
+        <div id="output" class="safe">... Awaiting Input ...</div>
+    </div>
+
+    <script>
+        // ***************************************************************
+        // !!! REPLACE THIS URL WITH YOUR RENDER-DEPLOYED BACKEND URL !!!
+        // ***************************************************************
+        const WAF_API_URL = 'YOUR_RENDER_BACKEND_URL_HERE/api/check'; 
+
+        async function sendToWAF() {
+            const userInput = document.getElementById('userInput').value;
+            const outputDiv = document.getElementById('output');
+            
+            outputDiv.innerHTML = 'Sending request to WAF...';
+            outputDiv.className = '';
+
+            try {
+                const response = await fetch(WAF_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ userInput: userInput })
+                });
+
+                // Check if the response is OK (200) or BLOCKED (403)
+                const data = await response.json();
+                
+                if (data.status === 'blocked') {
+                    outputDiv.className = 'blocked';
+                    outputDiv.innerHTML = `🚨 **BLOCKED!** ${data.message} <br> *Payload Used: ${userInput}*`;
+                } else if (data.status === 'safe') {
+                    outputDiv.className = 'safe';
+                    outputDiv.innerHTML = `✅ **PASSED!** ${data.message}`;
+                } else {
+                    // Handles unexpected responses
+                    outputDiv.className = 'blocked';
+                    outputDiv.innerHTML = `⚠️ **Unexpected Response:** ${data.message}`;
+                }
+
+            } catch (error) {
+                outputDiv.className = 'blocked';
+                outputDiv.innerHTML = `❌ **FATAL ERROR:** Could not connect to the WAF API. Check the console and ensure your Render URL is correct.`;
+                console.error('Fetch error:', error);
+            }
+        }
+    </script>
+</body>
+</html>
