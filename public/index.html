@@ -10,7 +10,7 @@
     
     <style>
         body {
-            background-color: #0d1117; /* Dark GitHub-like background to match your Render dashboard */
+            background-color: #0d1117; /* Dark Background */
             color: #c9d1d9;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             min-height: 100vh;
@@ -21,7 +21,7 @@
         }
 
         .main-container {
-            max-width: 800px;
+            max-width: 850px;
             width: 100%;
         }
 
@@ -32,111 +32,115 @@
             border-radius: 15px;
             padding: 40px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            text-align: center;
         }
 
-        h1 { color: white; font-weight: 700; margin-bottom: 10px; }
-        .subtitle { color: #8b949e; margin-bottom: 40px; }
+        h1 { color: white; font-weight: 700; margin-bottom: 5px; }
+        .subtitle { color: #8b949e; margin-bottom: 30px; font-size: 1.1rem; }
 
-        /* --- INPUT FIELD --- */
-        .form-control-custom {
+        /* --- INPUT GROUP --- */
+        .input-group-custom {
+            margin-bottom: 25px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.3);
+        }
+        
+        .form-control-dark {
             background-color: #0d1117;
             border: 1px solid #30363d;
-            color: #fff;
-            padding: 15px;
+            color: white;
+            padding: 15px 20px;
             font-size: 1.1rem;
-            margin-bottom: 20px;
+            border-right: none;
         }
-        .form-control-custom:focus {
+        .form-control-dark:focus {
             background-color: #0d1117;
             border-color: #58a6ff;
-            color: #fff;
-            box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
-            outline: none;
+            color: white;
+            box-shadow: none;
+            z-index: 2;
         }
 
-        /* --- BUTTONS --- */
-        .btn-check {
-            background-color: #238636; /* GitHub Green */
+        /* --- ANALYZE BUTTON --- */
+        .btn-analyze {
+            background-color: #238636; /* Green */
             color: white;
-            border: none;
-            padding: 12px 30px;
-            font-weight: 600;
-            width: 100%;
-            border-radius: 6px;
+            border: 1px solid #238636;
+            padding: 0 30px;
+            font-weight: 700;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
             transition: all 0.2s;
         }
-        .btn-check:hover { background-color: #2ea043; color: white; transform: translateY(-2px); }
+        .btn-analyze:hover {
+            background-color: #2ea043;
+            border-color: #2ea043;
+            transform: translateX(2px);
+        }
 
+        /* --- QUICK ACTIONS --- */
         .btn-quick {
             border: 1px solid #30363d;
             color: #8b949e;
-            background: transparent;
+            background: rgba(255,255,255,0.03);
             font-size: 0.9rem;
-            margin-right: 10px;
-            margin-bottom: 10px;
+            margin: 5px;
             padding: 8px 16px;
-            border-radius: 20px;
+            border-radius: 50px; /* Pill shape */
             transition: all 0.2s;
         }
         .btn-quick:hover { background: #21262d; color: white; border-color: #8b949e; cursor: pointer; }
 
-        /* --- RESULTS BOX --- */
+        /* --- RESULTS BOX (ALWAYS VISIBLE NOW) --- */
         .status-box {
             margin-top: 30px;
-            padding: 20px;
-            border-radius: 10px;
-            display: none; /* Hidden by default */
-            animation: fadeIn 0.3s ease-in-out;
+            padding: 25px;
+            border-radius: 12px;
+            background: #0d1117; /* Slightly darker inner box */
+            border: 1px solid #30363d;
             text-align: left;
+            transition: all 0.3s ease;
         }
         
         .status-blocked {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid #ef4444;
-            color: #ef4444;
+            border-color: #ef4444;
+            background: rgba(239, 68, 68, 0.05);
         }
         
         .status-safe {
-            background: rgba(35, 134, 54, 0.1);
-            border: 1px solid #238636;
-            color: #3fb950;
+            border-color: #238636;
+            background: rgba(35, 134, 54, 0.05);
         }
 
-        /* --- TERMINAL LOG --- */
+        /* --- LOG CONSOLE --- */
         .log-terminal {
-            background: #010409;
-            border: 1px solid #30363d;
+            background: #000;
             border-radius: 6px;
             padding: 15px;
             font-family: 'Courier New', Courier, monospace;
             margin-top: 15px;
             font-size: 0.85rem;
             color: #8b949e;
-            overflow-wrap: break-word; /* Prevents text overflow */
+            border-left: 3px solid #58a6ff;
         }
-        .log-label { color: #58a6ff; font-weight: bold; }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        .log-key { color: #79c0ff; }
     </style>
 </head>
 <body>
 
     <div class="main-container">
-        <div class="glass-card text-center">
-            <h1><i class="bi bi-shield-lock-fill"></i> WAF PROTOTYPE</h1>
-            <p class="subtitle">Secure Traffic Analysis & Mitigation System</p>
+        <div class="glass-card">
+            <h1><i class="bi bi-shield-check"></i> WAF PROTOTYPE</h1>
+            <p class="subtitle">Secure Traffic Analysis & Threat Mitigation</p>
 
-            <div>
-                <input type="text" id="userInput" class="form-control-custom w-100" placeholder="Enter URL parameter or payload (e.g. ' OR 1=1)..." autocomplete="off">
-                <button class="btn btn-check" onclick="sendToWAF()">
-                    <i class="bi bi-lightning-charge-fill"></i> ANALYZE TRAFFIC
+            <div class="input-group input-group-lg input-group-custom">
+                <input type="text" id="userInput" class="form-control form-control-dark" placeholder="Enter payload to scan..." autocomplete="off">
+                <button class="btn btn-analyze" type="button" onclick="sendToWAF()">
+                    <i class="bi bi-search"></i> SCAN
                 </button>
             </div>
 
-            <div class="d-flex flex-wrap justify-content-center mt-4">
+            <div class="d-flex flex-wrap justify-content-center mb-4">
                 <button class="btn btn-quick" onclick="fillInput('sqli')">⚡ SQL Injection</button>
                 <button class="btn btn-quick" onclick="fillInput('xss')">☢️ XSS Attack</button>
                 <button class="btn btn-quick" onclick="fillInput('rce')">💻 Command Injection</button>
@@ -144,14 +148,15 @@
             </div>
 
             <div id="resultBox" class="status-box">
-                <h4 id="resultTitle" class="fw-bold mb-2"></h4>
-                <p id="resultMsg" class="mb-0"></p>
+                <div class="d-flex align-items-center mb-2">
+                    <h4 id="resultTitle" class="fw-bold mb-0 text-white">System Ready</h4>
+                </div>
+                <p id="resultMsg" class="mb-0 text-secondary">Waiting for user input...</p>
                 
                 <div class="log-terminal">
-                    <div><span class="log-label">> Target Endpoint:</span> <span class="text-white">/api/check</span></div>
-                    <div><span class="log-label">> Payload Size:</span> <span id="logSize" class="text-white">0 bytes</span></div>
-                    <div><span class="log-label">> Timestamp:</span> <span id="logTime" class="text-white">--</span></div>
-                    <div><span class="log-label">> HTTP Status:</span> <span id="logStatus" class="fw-bold">--</span></div>
+                    <div><span class="log-key">> STATUS:</span> <span id="logStatus" class="fw-bold">IDLE</span></div>
+                    <div><span class="log-key">> PAYLOAD SIZE:</span> <span id="logSize" class="text-white">0 bytes</span></div>
+                    <div><span class="log-key">> TIMESTAMP:</span> <span id="logTime" class="text-white">--</span></div>
                 </div>
             </div>
 
@@ -159,19 +164,20 @@
     </div>
 
     <script>
-        // ************************************************************
-        // UPDATED URL FROM YOUR SCREENSHOT
-        // ************************************************************
+        // CONFIG: Your Render URL
         const API_URL = 'https://waf-prototype-fy.onrender.com/api/check'; 
 
         function fillInput(type) {
             const input = document.getElementById('userInput');
             
             if(type === 'sqli') input.value = "' OR 1=1 --";
-            // NOTE: The backslash below prevents the browser from closing the script tag early
+            // Important: Backslash prevents browser confusing the script tag
             if(type === 'xss') input.value = "<script>alert('Hacked')<\/script>"; 
             if(type === 'rce') input.value = "; cat /etc/passwd";
-            if(type === 'safe') input.value = "Search for products";
+            if(type === 'safe') input.value = "Search for laptop chargers";
+            
+            // Optional: Auto-click scan when button is pressed
+            // sendToWAF(); 
         }
 
         async function sendToWAF() {
@@ -185,18 +191,19 @@
             const logTime = document.getElementById('logTime');
             const logStatus = document.getElementById('logStatus');
 
-            if (!input.value) return;
+            if (!input.value) {
+                alert("Please enter some text to scan.");
+                return;
+            }
 
-            // Show Loading State
-            box.style.display = 'block';
-            box.className = 'status-box'; // Reset class
-            box.style.background = '#161b22';
-            box.style.border = '1px solid #30363d';
-            title.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Analyzing Packet...';
-            msg.innerText = "Establishing secure connection to WAF node...";
-            msg.style.color = "#8b949e";
+            // 1. Show Loading State
+            title.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Scanning...';
+            msg.innerText = "Analyzing packet signature...";
+            box.className = "status-box"; // Reset colors
+            box.style.opacity = "0.7";
 
             try {
+                // 2. Call Backend
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -205,20 +212,26 @@
 
                 const data = await response.json();
 
-                // Update UI based on Blocked/Safe
+                // 3. Update UI based on Response
+                box.style.opacity = "1";
+                
                 if (data.status === 'blocked') {
+                    // BLOCKED STATE
                     box.className = 'status-box status-blocked';
-                    title.innerHTML = `<i class="bi bi-exclamation-octagon-fill"></i> ACCESS DENIED: ${data.type}`;
-                    msg.innerHTML = `<strong>WAF Rule Triggered:</strong> ${data.message}`;
-                    msg.style.color = "#ef4444";
+                    title.innerHTML = `<i class="bi bi-shield-x"></i> THREAT BLOCKED`;
+                    title.className = "fw-bold mb-0 text-danger";
+                    msg.innerHTML = `Firewall Rule Triggered: <strong>${data.message}</strong>`;
+                    msg.className = "mb-0 text-danger";
                     
                     logStatus.innerText = "403 FORBIDDEN";
                     logStatus.className = "text-danger fw-bold";
                 } else {
+                    // SAFE STATE
                     box.className = 'status-box status-safe';
-                    title.innerHTML = `<i class="bi bi-shield-fill-check"></i> ACCESS GRANTED`;
-                    msg.innerHTML = `<strong>System Analysis:</strong> ${data.message}`;
-                    msg.style.color = "#3fb950";
+                    title.innerHTML = `<i class="bi bi-shield-check"></i> TRAFFIC ALLOWED`;
+                    title.className = "fw-bold mb-0 text-success";
+                    msg.innerHTML = `Analysis Result: <strong>${data.message}</strong>`;
+                    msg.className = "mb-0 text-success";
 
                     logStatus.innerText = "200 OK";
                     logStatus.className = "text-success fw-bold";
@@ -231,10 +244,10 @@
             } catch (error) {
                 console.error(error);
                 box.className = 'status-box status-blocked';
-                title.innerText = "CONNECTION FAILURE";
-                msg.innerText = "Could not reach the Render server. Please wait 30 seconds (Free tier servers sleep when inactive).";
-                msg.style.color = "#ef4444";
-                logStatus.innerText = "503 SERVICE UNAVAILABLE";
+                box.style.opacity = "1";
+                title.innerText = "CONNECTION ERROR";
+                msg.innerText = "Server Unreachable. Is your Render backend awake?";
+                logStatus.innerText = "503 ERROR";
             }
         }
     </script>
