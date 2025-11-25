@@ -1,93 +1,129 @@
+// A. IMPORT MODULES
 const express = require('express');
 const bodyParser = require('body-parser');
-const cors = require('cors');
-const path = require('path');
+const cors = require('cors'); 
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000; 
 
-// Middleware
-app.use(cors());
-app.use(bodyParser.json());
-// Serves the HTML file from the 'public' folder
-app.use(express.static(path.join(__dirname, 'public'))); 
+// B. MIDDLEWARE
+app.use(cors()); 
+app.use(bodyParser.json()); 
 
-// --- DATABASE (In-Memory) ---
-let stats = {
-    total: 0,
-    blocked: 0,
-    sql: 0,
-    xss: 0,
-    rce: 0
+// --- C. SERVER STATE (In-Memory Database) ---
+// This keeps track of data as long as the server is running.
+let serverStats = {
+    totalRequests: 0,
+    blockedRequests: 0,
+    sqlCount: 0,
+    xssCount: 0,
+    rceCount: 0,
+    systemStatus: 'OPERATIONAL'
 };
-let logs = [];
 
-// --- WAF ENGINE LOGIC ---
-function analyzePacket(input) {
-    if (!input) return { blocked: false, type: 'Empty', severity: 'LOW' };
+// Store the last 50 logs for the dashboard
+let requestLogs = [];
+
+// --- D. SECURITY LOGIC (WAF ENGINE) ---
+function wafCheck(input) {
+    const lowerInput = input.toLowerCase();
     
-    const s = input.toLowerCase();
-    
-    // SQL Injection Patterns
-    if (s.match(/(select|union|insert|update|drop|--|' or 1=1|1=1)/)) 
-        return { blocked: true, type: 'SQL Injection', severity: 'HIGH' };
-    
-    // XSS Patterns
-    if (s.match(/(<script|javascript:|onerror=|onload=|alert\()/)) 
-        return { blocked: true, type: 'XSS', severity: 'MEDIUM' };
-
-    // RCE (Command Injection) Patterns
-    if (s.match(/(; ls|&&|\||sudo|cmd.exe|\/etc\/passwd|cat |ping )/)) 
-        return { blocked: true, type: 'Remote Code Exec', severity: 'CRITICAL' };
-
-    return { blocked: false, type: 'Valid Request', severity: 'LOW' };
-}
-
-// --- API ROUTES ---
-
-// 1. Check Payload
-app.post('/api/check', (req, res) => {
-    const payload = req.body.userInput || '';
-    // specific logic to catch localhost or real IP
-    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
-    
-    stats.total++;
-    
-    const result = analyzePacket(payload);
-    
-    const logEntry = {
-        id: Date.now(),
-        time: new Date().toISOString(),
-        ip: ip.replace('::ffff:', ''), // Clean up IPv6 prefix if present
-        payload: payload,
-        ...result
-    };
-
-    logs.unshift(logEntry);
-    if(logs.length > 50) logs.pop(); // Keep only last 50 logs
-
-    if(result.blocked) {
-        stats.blocked++;
-        if(result.type.includes('SQL')) stats.sql++;
-        if(result.type.includes('XSS')) stats.xss++;
-        if(result.type.includes('Code')) stats.rce++;
-        
-        return res.status(200).json({ status: 'blocked', log: logEntry });
+    // 1. SQL Injection (High Severity)
+    // Checks for keywords like UNION, SELECT, OR 1=1
+    if (lowerInput.match(/(select\s\*|union\s+select|drop\s+table|or\s+1=1|--|\binsert\b|\bupdate\b)/)) {
+        return { blocked: true, type: 'SQLi', severity: 'HIGH', reason: 'SQL Injection Signature' };
     }
 
-    res.json({ status: 'allowed', log: logEntry });
+    // 2. XSS (Medium Severity)
+    // Checks for script tags, event handlers, and javascript: protocols
+    if (lowerInput.match(/(<script|javascript:|onerror=|onload=|alert\(|document\.cookie)/)) {
+        return { blocked: true, type: 'XSS', severity: 'MEDIUM', reason: 'Cross-Site Scripting Pattern' };
+    }
+
+    // 3. RCE & Path Traversal (Critical Severity)
+    // Checks for command chaining, directory traversal, and system files
+    if (lowerInput.match(/(;\s*ls|&&\s*|\|\s*|sudo\s|cmd\.exe|\.\.\/|\.\.\\|\/etc\/passwd|whoami)/)) {
+        return { blocked: true, type: 'RCE', severity: 'CRITICAL', reason: 'Remote Command Execution' };
+    }
+
+    return { blocked: false, type: 'Clean', severity: 'LOW', reason: 'Valid Request' }; 
+}
+
+// --- E. API ROUTES ---
+
+// 1. TRAFFIC ANALYSIS ROUTE (The WAF Guard)
+app.post('/api/check', (req, res) => {
+    const userInput = req.body.userInput || '';
+    
+    // Simulate Client IP (since Render creates a proxy, real IP might be hidden)
+    const clientIp = req.headers['x-forwarded-for'] || '192.168.1.' + Math.floor(Math.random() * 255);
+
+    serverStats.totalRequests++;
+
+    const result = wafCheck(userInput);
+
+    // Create Log Entry
+    const logEntry = {
+        id: Date.now(),
+        timestamp: new Date().toISOString(),
+        ip: clientIp,
+        payload: userInput,
+        action: result.blocked ? 'BLOCKED' : 'ALLOWED',
+        type: result.type,
+        severity: result.severity
+    };
+
+    // Update History (Keep only last 50 logs)
+    requestLogs.unshift(logEntry); 
+    if (requestLogs.length > 50) requestLogs.pop(); 
+
+    if (result.blocked) {
+        serverStats.blockedRequests++;
+        if (result.type === 'SQLi') serverStats.sqlCount++;
+        if (result.type === 'XSS') serverStats.xssCount++;
+        if (result.type === 'RCE') serverStats.rceCount++;
+
+        // Change system status dynamically based on threat level
+        if(serverStats.blockedRequests > 5) serverStats.systemStatus = 'ELEVATED THREAT';
+
+        console.log(`[BLOCKED] IP: ${clientIp} | Type: ${result.type}`);
+        
+        return res.status(403).json({ 
+            status: 'blocked', 
+            message: result.reason,
+            log: logEntry
+        });
+    }
+
+    console.log(`[ALLOWED] IP: ${clientIp} | Clean Traffic`);
+    
+    res.json({ 
+        status: 'safe', 
+        message: 'Request Allowed',
+        log: logEntry
+    });
 });
 
-// 2. Get Stats
+// 2. DASHBOARD DATA ROUTE (The Frontend calls this to update charts)
 app.get('/api/stats', (req, res) => {
-    res.json({ stats, logs });
+    res.json({
+        stats: serverStats,
+        logs: requestLogs
+    });
 });
 
-// 3. Reset System
+// 3. RESET ROUTE (To clear stats for a fresh demo)
 app.post('/api/reset', (req, res) => {
-    stats = { total: 0, blocked: 0, sql: 0, xss: 0, rce: 0 };
-    logs = [];
-    res.json({ success: true });
+    serverStats = { totalRequests: 0, blockedRequests: 0, sqlCount: 0, xssCount: 0, rceCount: 0, systemStatus: 'OPERATIONAL' };
+    requestLogs = [];
+    res.json({ message: 'System Reset' });
 });
 
-app.listen(PORT, () => console.log(`[AIGuard] Server running on http://localhost:${PORT}`));
+app.get('/', (req, res) => {
+    res.send('WAF Enterprise Backend is Online v3.0');
+});
+
+// F. START SERVER
+app.listen(PORT, () => {
+    console.log(`>>> WAF Server running on port ${PORT}`);
+});
