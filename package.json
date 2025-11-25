@@ -1,10 +1,11 @@
 {
   "name": "waf-enterprise-prototype",
   "version": "2.0.0",
-  "description": "Enterprise-grade Web Application Firewall prototype with real-time analytics.",
+  "description": "WAF Prototype with Real-time Analytics",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "nodemon server.js"
   },
   "dependencies": {
     "body-parser": "^1.20.2",
