@@ -10,19 +10,19 @@
     
     <style>
         body {
-            background-color: #0d1117; /* Dark GitHub-like background */
+            background-color: #0d1117; /* Dark GitHub-like background to match your Render dashboard */
             color: #c9d1d9;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 20px;
         }
 
         .main-container {
             max-width: 800px;
             width: 100%;
-            padding: 20px;
         }
 
         /* --- CARD STYLING --- */
@@ -30,11 +30,12 @@
             background: #161b22;
             border: 1px solid #30363d;
             border-radius: 15px;
-            padding: 30px;
+            padding: 40px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.5);
         }
 
-        h1 { color: white; font-weight: 700; margin-bottom: 30px; }
+        h1 { color: white; font-weight: 700; margin-bottom: 10px; }
+        .subtitle { color: #8b949e; margin-bottom: 40px; }
 
         /* --- INPUT FIELD --- */
         .form-control-custom {
@@ -43,21 +44,25 @@
             color: #fff;
             padding: 15px;
             font-size: 1.1rem;
+            margin-bottom: 20px;
         }
         .form-control-custom:focus {
             background-color: #0d1117;
             border-color: #58a6ff;
             color: #fff;
             box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
+            outline: none;
         }
 
         /* --- BUTTONS --- */
         .btn-check {
-            background-color: #238636;
+            background-color: #238636; /* GitHub Green */
             color: white;
             border: none;
             padding: 12px 30px;
             font-weight: 600;
+            width: 100%;
+            border-radius: 6px;
             transition: all 0.2s;
         }
         .btn-check:hover { background-color: #2ea043; color: white; transform: translateY(-2px); }
@@ -69,16 +74,20 @@
             font-size: 0.9rem;
             margin-right: 10px;
             margin-bottom: 10px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            transition: all 0.2s;
         }
-        .btn-quick:hover { background: #21262d; color: white; border-color: #8b949e; }
+        .btn-quick:hover { background: #21262d; color: white; border-color: #8b949e; cursor: pointer; }
 
-        /* --- STATUS BADGES --- */
+        /* --- RESULTS BOX --- */
         .status-box {
             margin-top: 30px;
             padding: 20px;
             border-radius: 10px;
             display: none; /* Hidden by default */
             animation: fadeIn 0.3s ease-in-out;
+            text-align: left;
         }
         
         .status-blocked {
@@ -93,19 +102,23 @@
             color: #3fb950;
         }
 
+        /* --- TERMINAL LOG --- */
+        .log-terminal {
+            background: #010409;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 15px;
+            font-family: 'Courier New', Courier, monospace;
+            margin-top: 15px;
+            font-size: 0.85rem;
+            color: #8b949e;
+            overflow-wrap: break-word; /* Prevents text overflow */
+        }
+        .log-label { color: #58a6ff; font-weight: bold; }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
-        }
-
-        .log-terminal {
-            background: #000;
-            border-radius: 6px;
-            padding: 15px;
-            font-family: monospace;
-            margin-top: 15px;
-            font-size: 0.9rem;
-            color: #8b949e;
         }
     </style>
 </head>
@@ -113,17 +126,17 @@
 
     <div class="main-container">
         <div class="glass-card text-center">
-            <h1><i class="bi bi-shield-lock"></i> WAF PROTOTYPE</h1>
-            <p class="text-secondary mb-4">Enter a URL parameter or string below to test the Firewall security logic.</p>
+            <h1><i class="bi bi-shield-lock-fill"></i> WAF PROTOTYPE</h1>
+            <p class="subtitle">Secure Traffic Analysis & Mitigation System</p>
 
-            <div class="mb-4">
-                <input type="text" id="userInput" class="form-control form-control-custom mb-3" placeholder="Ex: SELECT * FROM users..." autocomplete="off">
-                <button class="btn btn-check btn-lg w-100" onclick="sendToWAF()">
-                    <i class="bi bi-search"></i> ANALYZE TRAFFIC
+            <div>
+                <input type="text" id="userInput" class="form-control-custom w-100" placeholder="Enter URL parameter or payload (e.g. ' OR 1=1)..." autocomplete="off">
+                <button class="btn btn-check" onclick="sendToWAF()">
+                    <i class="bi bi-lightning-charge-fill"></i> ANALYZE TRAFFIC
                 </button>
             </div>
 
-            <div class="d-flex flex-wrap justify-content-center mb-2">
+            <div class="d-flex flex-wrap justify-content-center mt-4">
                 <button class="btn btn-quick" onclick="fillInput('sqli')">⚡ SQL Injection</button>
                 <button class="btn btn-quick" onclick="fillInput('xss')">☢️ XSS Attack</button>
                 <button class="btn btn-quick" onclick="fillInput('rce')">💻 Command Injection</button>
@@ -131,13 +144,14 @@
             </div>
 
             <div id="resultBox" class="status-box">
-                <h3 id="resultTitle" class="fw-bold mb-2"></h3>
+                <h4 id="resultTitle" class="fw-bold mb-2"></h4>
                 <p id="resultMsg" class="mb-0"></p>
                 
-                <div class="log-terminal text-start">
-                    <div>> Payload Size: <span id="logSize" class="text-white">0 bytes</span></div>
-                    <div>> Server Time: <span id="logTime" class="text-white">--</span></div>
-                    <div>> Analysis Result: <span id="logStatus" class="fw-bold">--</span></div>
+                <div class="log-terminal">
+                    <div><span class="log-label">> Target Endpoint:</span> <span class="text-white">/api/check</span></div>
+                    <div><span class="log-label">> Payload Size:</span> <span id="logSize" class="text-white">0 bytes</span></div>
+                    <div><span class="log-label">> Timestamp:</span> <span id="logTime" class="text-white">--</span></div>
+                    <div><span class="log-label">> HTTP Status:</span> <span id="logStatus" class="fw-bold">--</span></div>
                 </div>
             </div>
 
@@ -145,13 +159,17 @@
     </div>
 
     <script>
-        // CONFIG: Replace this URL with your actual Render URL
+        // ************************************************************
+        // UPDATED URL FROM YOUR SCREENSHOT
+        // ************************************************************
         const API_URL = 'https://waf-prototype-fy.onrender.com/api/check'; 
 
         function fillInput(type) {
             const input = document.getElementById('userInput');
+            
             if(type === 'sqli') input.value = "' OR 1=1 --";
-            if(type === 'xss') input.value = "<script>alert('Hacked')</script>";
+            // NOTE: The backslash below prevents the browser from closing the script tag early
+            if(type === 'xss') input.value = "<script>alert('Hacked')<\/script>"; 
             if(type === 'rce') input.value = "; cat /etc/passwd";
             if(type === 'safe') input.value = "Search for products";
         }
@@ -173,8 +191,10 @@
             box.style.display = 'block';
             box.className = 'status-box'; // Reset class
             box.style.background = '#161b22';
-            title.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Analyzing...';
-            msg.innerText = "Connecting to WAF server...";
+            box.style.border = '1px solid #30363d';
+            title.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Analyzing Packet...';
+            msg.innerText = "Establishing secure connection to WAF node...";
+            msg.style.color = "#8b949e";
 
             try {
                 const response = await fetch(API_URL, {
@@ -188,15 +208,19 @@
                 // Update UI based on Blocked/Safe
                 if (data.status === 'blocked') {
                     box.className = 'status-box status-blocked';
-                    title.innerHTML = `<i class="bi bi-exclamation-triangle-fill"></i> ${data.type} BLOCKED`;
-                    msg.innerText = `Reason: ${data.message}`;
-                    logStatus.innerText = "REJECTED (403)";
+                    title.innerHTML = `<i class="bi bi-exclamation-octagon-fill"></i> ACCESS DENIED: ${data.type}`;
+                    msg.innerHTML = `<strong>WAF Rule Triggered:</strong> ${data.message}`;
+                    msg.style.color = "#ef4444";
+                    
+                    logStatus.innerText = "403 FORBIDDEN";
                     logStatus.className = "text-danger fw-bold";
                 } else {
                     box.className = 'status-box status-safe';
-                    title.innerHTML = `<i class="bi bi-shield-check"></i> TRAFFIC ALLOWED`;
-                    msg.innerText = `Reason: ${data.message}`;
-                    logStatus.innerText = "ACCEPTED (200)";
+                    title.innerHTML = `<i class="bi bi-shield-fill-check"></i> ACCESS GRANTED`;
+                    msg.innerHTML = `<strong>System Analysis:</strong> ${data.message}`;
+                    msg.style.color = "#3fb950";
+
+                    logStatus.innerText = "200 OK";
                     logStatus.className = "text-success fw-bold";
                 }
 
@@ -205,10 +229,12 @@
                 logTime.innerText = new Date().toLocaleTimeString();
 
             } catch (error) {
+                console.error(error);
                 box.className = 'status-box status-blocked';
-                title.innerText = "CONNECTION ERROR";
-                msg.innerText = "Could not reach the backend server. Is Render running?";
-                logStatus.innerText = "TIMEOUT";
+                title.innerText = "CONNECTION FAILURE";
+                msg.innerText = "Could not reach the Render server. Please wait 30 seconds (Free tier servers sleep when inactive).";
+                msg.style.color = "#ef4444";
+                logStatus.innerText = "503 SERVICE UNAVAILABLE";
             }
         }
     </script>
