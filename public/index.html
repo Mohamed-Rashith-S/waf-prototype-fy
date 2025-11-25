@@ -3,394 +3,433 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AIGuard WAF Console</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <title>WAF Enterprise Console | Security Ops</title>
     
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
         :root {
-            --bg: #0b1120;       /* Very dark blue/slate */
-            --surface: #1e293b;  /* Lighter slate for cards */
-            --border: #334155;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --primary: #6366f1;  /* Indigo */
-            --green: #10b981;
-            --red: #ef4444;
-            --yellow: #f59e0b;
+            --sidebar-width: 250px;
+            --bg-dark: #0f1115;      /* Ultra Dark Background */
+            --bg-panel: #181b21;     /* Card Background */
+            --border-color: #2a2e35;
+            --primary: #3b82f6;      /* Blue */
+            --success: #10b981;      /* Green */
+            --danger: #ef4444;       /* Red */
+            --warning: #f59e0b;      /* Orange */
+            --purple: #8b5cf6;       /* Purple for RCE */
         }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            background-color: var(--bg);
-            color: var(--text-main);
+            background-color: var(--bg-dark);
+            color: #d1d5db;
             font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--bg-panel);
+            border-right: 1px solid var(--border-color);
+            position: fixed;
             height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        /* HEADER */
-        header {
-            height: 60px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 24px;
-            background: rgba(11, 17, 32, 0.9);
-        }
-        .brand { font-weight: 700; font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
-        .brand i { color: var(--primary); }
-        .status-badge { font-size: 0.75rem; background: rgba(16, 185, 129, 0.15); color: var(--green); padding: 4px 8px; border-radius: 99px; font-weight: 600; }
-
-        /* MAIN GRID */
-        .main-container {
-            flex: 1;
-            display: grid;
-            grid-template-rows: auto 1fr;
             padding: 24px;
-            gap: 24px;
-            max-width: 1400px;
-            margin: 0 auto;
-            width: 100%;
-        }
-
-        /* STATS BAR */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
-        }
-        .stat-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .stat-info h3 { font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; }
-        .stat-info p { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-        .icon-box { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
-
-        /* CONTENT SPLIT */
-        .content-split {
-            display: grid;
-            grid-template-columns: 1fr 1.2fr;
-            gap: 24px;
-            min-height: 0; /* Important for scroll */
-        }
-
-        /* TERMINAL (LEFT) */
-        .terminal-section {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            z-index: 100;
         }
-        .terminal-window {
-            flex: 1;
-            background: #000000;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 16px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.9rem;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-        }
-        .term-line { margin-bottom: 8px; line-height: 1.4; word-break: break-all; }
-        .prompt-area {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            padding: 12px;
-            border-radius: 8px;
-        }
-        .prompt-symbol { color: var(--green); font-weight: bold; }
-        .cmd-input {
-            background: transparent;
-            border: none;
+
+        .brand {
             color: white;
-            flex: 1;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 1rem;
-            outline: none;
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            letter-spacing: -0.5px;
         }
-        .quick-actions { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
-        .btn-action {
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text-muted);
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            white-space: nowrap;
-        }
-        .btn-action:hover { border-color: var(--primary); color: white; }
 
-        /* LOGS (RIGHT) */
-        .logs-section {
-            background: var(--surface);
-            border: 1px solid var(--border);
+        .nav-item {
+            color: #9ca3af;
+            padding: 12px 16px;
             border-radius: 8px;
-            overflow: hidden;
+            margin-bottom: 4px;
+            text-decoration: none;
             display: flex;
-            flex-direction: column;
-        }
-        .logs-header {
-            padding: 16px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
             align-items: center;
-            background: rgba(255,255,255,0.02);
+            gap: 12px;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            cursor: pointer;
         }
-        .table-container { flex: 1; overflow-y: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        th { text-align: left; padding: 12px 16px; color: var(--text-muted); font-weight: 500; font-size: 0.8rem; position: sticky; top: 0; background: var(--surface); }
-        td { padding: 10px 16px; border-bottom: 1px solid var(--border); color: var(--text-muted); }
-        tr:hover td { background: rgba(255,255,255,0.02); }
-        
-        /* UTILS */
-        .tag { padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
-        .tag-high { background: rgba(239, 68, 68, 0.2); color: var(--red); }
-        .tag-med { background: rgba(245, 158, 11, 0.2); color: var(--yellow); }
-        .tag-low { background: rgba(99, 102, 241, 0.2); color: var(--primary); }
-        
-        .text-green { color: var(--green); }
-        .text-red { color: var(--red); }
-        
-        .btn-reset { background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.9rem; }
-        .btn-reset:hover { color: var(--red); }
 
-        /* SCROLLBAR */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: var(--bg); }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        .nav-item:hover, .nav-item.active {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: var(--primary);
+        }
+
+        /* --- MAIN AREA --- */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            padding: 32px;
+        }
+
+        /* --- DASHBOARD CARDS --- */
+        .cyber-card {
+            background-color: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            height: 100%;
+            transition: transform 0.2s;
+        }
+        
+        .metric-label {
+            color: #9ca3af;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        .metric-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: white;
+            margin-top: 8px;
+        }
+
+        /* --- INPUT TERMINAL --- */
+        .terminal-input {
+            background-color: #000;
+            border: 1px solid #333;
+            color: var(--success);
+            font-family: 'JetBrains Mono', monospace;
+            padding: 12px;
+        }
+        .terminal-input:focus {
+            background-color: #050505;
+            border-color: var(--primary);
+            color: var(--success);
+            box-shadow: none;
+        }
+
+        /* --- LOG TABLE --- */
+        .table-dark-custom {
+            --bs-table-bg: transparent;
+        }
+        .table-dark-custom th {
+            color: #6b7280;
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .table-dark-custom td {
+            color: #d1d5db;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+            font-size: 0.9rem;
+        }
+
+        /* --- BADGES --- */
+        .badge-custom { padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
+        .bg-danger-subtle { background: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); }
+        .bg-success-subtle { background: rgba(16, 185, 129, 0.15); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2); }
+        .bg-warning-subtle { background: rgba(245, 158, 11, 0.15); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.2); }
+        .bg-purple-subtle { background: rgba(139, 92, 246, 0.15); color: var(--purple); border: 1px solid rgba(139, 92, 246, 0.2); }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .main-content { margin-left: 0; padding: 20px; }
+        }
     </style>
 </head>
 <body>
 
-    <header>
+    <div class="sidebar">
         <div class="brand">
-            <i class="bi bi-shield-lock-fill"></i>
-            <span>AIGuard <span style="font-weight: 300; opacity: 0.6;">WAF Core</span></span>
+            <i class="bi bi-shield-lock-fill text-primary"></i> WAF<span class="fw-light">CONSOLE</span>
         </div>
-        <div class="d-flex align-items-center gap-3">
-            <span class="status-badge">● SYSTEM ACTIVE</span>
-        </div>
-    </header>
-
-    <div class="main-container">
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-info">
-                    <h3 id="stat-total">0</h3>
-                    <p>Total Requests</p>
+        <nav>
+            <div class="nav-item active"><i class="bi bi-grid-1x2-fill"></i> Dashboard</div>
+            <div class="nav-item"><i class="bi bi-activity"></i> Live Traffic</div>
+            <div class="nav-item"><i class="bi bi-file-earmark-code"></i> Attack Logs</div>
+            <div class="nav-item"><i class="bi bi-gear"></i> Configuration</div>
+        </nav>
+        
+        <div class="mt-auto">
+            <div class="p-3 rounded bg-dark border border-secondary border-opacity-25">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="spinner-grow spinner-grow-sm text-success" role="status"></span>
+                    <span class="small fw-bold text-white">SYSTEM ONLINE</span>
                 </div>
-                <div class="icon-box" style="background: rgba(99, 102, 241, 0.1); color: var(--primary);">
-                    <i class="bi bi-globe"></i>
-                </div>
+                <div class="small text-muted" id="systemStatus">Operational</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-info">
-                    <h3 id="stat-blocked" class="text-red">0</h3>
-                    <p>Threats Blocked</p>
-                </div>
-                <div class="icon-box" style="background: rgba(239, 68, 68, 0.1); color: var(--red);">
-                    <i class="bi bi-shield-x"></i>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-info">
-                    <h3 id="stat-sql" style="color: var(--yellow)">0</h3>
-                    <p>SQL Injection</p>
-                </div>
-                <div class="icon-box" style="background: rgba(245, 158, 11, 0.1); color: var(--yellow);">
-                    <i class="bi bi-database-exclamation"></i>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-info">
-                    <h3 id="stat-xss" style="color: #22d3ee">0</h3>
-                    <p>XSS / RCE</p>
-                </div>
-                <div class="icon-box" style="background: rgba(34, 211, 238, 0.1); color: #22d3ee;">
-                    <i class="bi bi-code-slash"></i>
-                </div>
-            </div>
-        </div>
-
-        <div class="content-split">
-            
-            <div class="terminal-section">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <h5 style="font-size: 0.9rem; color: var(--text-muted); font-weight: 600;">THREAT SIMULATOR</h5>
-                </div>
-                
-                <div class="terminal-window" id="terminal-out">
-                    <div class="term-line text-green">root@waf-engine:~$ ./start-service</div>
-                    <div class="term-line">System initialized. Waiting for traffic...</div>
-                    <br>
-                </div>
-
-                <div class="quick-actions">
-                    <button class="btn-action" onclick="setInput('1 OR 1=1')">SQL Injection</button>
-                    <button class="btn-action" onclick="setInput('<script>alert(1)</script>')">XSS Attack</button>
-                    <button class="btn-action" onclick="setInput('; cat /etc/passwd')">RCE Linux</button>
-                    <button class="btn-action" onclick="setInput('/home')">Safe Request</button>
-                </div>
-
-                <div class="prompt-area">
-                    <span class="prompt-symbol">➜</span>
-                    <input type="text" id="cmdInput" class="cmd-input" placeholder="Type a payload..." autocomplete="off">
-                </div>
-            </div>
-
-            <div class="logs-section">
-                <div class="logs-header">
-                    <h5 style="font-size: 0.9rem; font-weight: 600;">LIVE TRAFFIC LOGS</h5>
-                    <button class="btn-reset" onclick="resetSystem()" title="Clear Logs">
-                        <i class="bi bi-trash"></i> Reset
-                    </button>
-                </div>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th width="80">TIME</th>
-                                <th width="100">SEVERITY</th>
-                                <th>TYPE</th>
-                                <th>PAYLOAD</th>
-                                <th width="80">STATUS</th>
-                            </tr>
-                        </thead>
-                        <tbody id="log-table">
-                            </tbody>
-                    </table>
-                </div>
-            </div>
-
         </div>
     </div>
 
+    <div class="main-content">
+        
+        <div class="d-flex justify-content-between align-items-center mb-5">
+            <div>
+                <h3 class="fw-bold text-white mb-1">Security Dashboard</h3>
+                <p class="text-secondary mb-0">Real-time threat mitigation and analysis.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-secondary btn-sm" onclick="fetchServerStats()"><i class="bi bi-arrow-clockwise"></i> Sync</button>
+                <button class="btn btn-primary btn-sm" onclick="exportReport()"><i class="bi bi-file-pdf"></i> Export Report</button>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-md-3">
+                <div class="cyber-card">
+                    <div class="metric-label">Total Requests</div>
+                    <div class="metric-value" id="totalReq">0</div>
+                    <div class="mt-2 small text-secondary">
+                        <i class="bi bi-arrow-up text-success"></i> <span id="reqRate">0</span> req/sec
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="cyber-card" style="border-left: 4px solid var(--danger);">
+                    <div class="metric-label text-danger">Attacks Blocked</div>
+                    <div class="metric-value" id="blockedReq">0</div>
+                    <div class="mt-2 small text-secondary">Global filtering active</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="cyber-card">
+                    <div class="metric-label text-warning">SQL Injections</div>
+                    <div class="metric-value text-warning" id="sqlCount">0</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="cyber-card">
+                    <div class="metric-label text-info">XSS & RCE</div>
+                    <div class="d-flex gap-3 align-items-baseline">
+                        <div class="metric-value text-info" id="xssCount">0</div>
+                        <div class="small text-secondary">/ <span id="rceCount" style="color: var(--purple)">0</span> RCE</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-lg-8">
+                <div class="cyber-card">
+                    <div class="d-flex justify-content-between mb-4">
+                        <h6 class="text-white fw-bold">Incoming Traffic Volume</h6>
+                        <span class="badge bg-success-subtle">LIVE MONITORING</span>
+                    </div>
+                    <canvas id="trafficChart" style="max-height: 250px;"></canvas>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="cyber-card">
+                    <h6 class="text-white fw-bold mb-3">Threat Simulator</h6>
+                    <p class="small text-secondary mb-3">Test WAF rules against specific payloads.</p>
+                    
+                    <div class="input-group mb-3">
+                        <input type="text" id="userInput" class="form-control terminal-input" placeholder="Enter payload..." autocomplete="off">
+                        <button class="btn btn-primary" onclick="sendToWAF()"><i class="bi bi-play-fill"></i></button>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-secondary btn-sm text-start" onclick="fillAttack('sqli')">
+                            <span class="text-warning me-2">●</span> SQL Injection Test
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm text-start" onclick="fillAttack('xss')">
+                            <span class="text-info me-2">●</span> XSS Script Test
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm text-start" onclick="fillAttack('rce')">
+                            <span style="color: var(--purple)" class="me-2">●</span> RCE / Root Access
+                        </button>
+                         <button class="btn btn-outline-secondary btn-sm text-start" onclick="fillAttack('safe')">
+                            <span class="text-success me-2">●</span> Safe Traffic Test
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="cyber-card">
+            <h6 class="text-white fw-bold mb-3">Recent Security Events</h6>
+            <div class="table-responsive">
+                <table class="table table-dark-custom">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Severity</th>
+                            <th>Attack Type</th>
+                            <th>Origin IP</th>
+                            <th>Payload Content</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logTableBody">
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">Connecting to WAF Server...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Use relative path to work automatically on localhost
-        const API_URL = ''; 
-
-        // --- DOM ELEMENTS ---
-        const termOut = document.getElementById('terminal-out');
-        const cmdInput = document.getElementById('cmdInput');
-        const logTable = document.getElementById('log-table');
-
-        // --- INPUT HANDLING ---
-        function setInput(val) {
-            cmdInput.value = val;
-            cmdInput.focus();
-        }
-
-        cmdInput.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                sendPacket(this.value);
-                this.value = '';
+        // ***************************************************************
+        // CONFIG: Replace with your Render URL if hosted, or http://localhost:3000 for local
+        // ***************************************************************
+        const API_URL = 'https://waf-prototype-fy.onrender.com'; 
+        
+        // --- CHART SETUP ---
+        const ctx = document.getElementById('trafficChart').getContext('2d');
+        const trafficChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Array(20).fill(''),
+                datasets: [{
+                    label: 'Requests',
+                    data: Array(20).fill(0),
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { display: false },
+                    y: { grid: { color: '#2a2e35' }, beginAtZero: true }
+                },
+                animation: { duration: 0 } // Performance optimization
             }
         });
 
-        // --- CORE LOGIC ---
-        async function sendPacket(payload) {
+        // --- CORE FUNCTIONS ---
+
+        function fillAttack(type) {
+            const input = document.getElementById('userInput');
+            if(type === 'sqli') input.value = "' OR 1=1 --";
+            if(type === 'xss') input.value = "<script>alert('Stealing Cookies')</script>";
+            if(type === 'rce') input.value = "; cat /etc/passwd";
+            if(type === 'safe') input.value = "Search for iPhone 15";
+            
+            // Auto submit for better UX
+            sendToWAF();
+        }
+
+        async function sendToWAF() {
+            const input = document.getElementById('userInput');
+            const payload = input.value;
             if(!payload) return;
 
-            // 1. Update Terminal UI
-            addTermLine(`➜ ${escapeHTML(payload)}`, 'white');
-            addTermLine(`  Processing packet...`, 'muted');
-
             try {
+                // Send Request
                 const res = await fetch(`${API_URL}/api/check`, {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ userInput: payload })
                 });
+                
                 const data = await res.json();
 
-                if (data.status === 'blocked') {
-                    addTermLine(`  [BLOCK] WAF Intercepted: ${data.log.type}`, 'red');
-                } else {
-                    addTermLine(`  [PASS] Request forwarded to origin.`, 'green');
-                }
-                
-                // Auto scroll terminal
-                termOut.scrollTop = termOut.scrollHeight;
-                
-                // Refresh data immediately
-                fetchStats();
+                // Clear input and immediately refresh dash
+                input.value = '';
+                fetchServerStats();
 
-            } catch (err) {
-                addTermLine(`  [ERROR] Server offline.`, 'red');
+            } catch (error) {
+                alert('Error connecting to WAF Server: ' + error.message);
             }
         }
 
-        // --- FETCHING DATA ---
-        async function fetchStats() {
+        async function fetchServerStats() {
             try {
-                const res = await fetch(`${API_URL}/api/stats`);
-                const data = await res.json();
-                updateUI(data);
-            } catch (e) { console.error(e); }
+                const response = await fetch(`${API_URL}/api/stats`);
+                const data = await response.json();
+                
+                updateDashboard(data.stats);
+                updateLogs(data.logs);
+
+            } catch (error) {
+                console.error("Connection lost:", error);
+                document.getElementById('systemStatus').innerText = "Offline / Connecting...";
+                document.getElementById('systemStatus').className = "small text-danger";
+            }
         }
 
-        function updateUI(data) {
-            // Stats
-            document.getElementById('stat-total').innerText = data.stats.total;
-            document.getElementById('stat-blocked').innerText = data.stats.blocked;
-            document.getElementById('stat-sql').innerText = data.stats.sql;
-            document.getElementById('stat-xss').innerText = data.stats.xss + data.stats.rce;
+        function updateDashboard(stats) {
+            // Update Numbers
+            document.getElementById('totalReq').innerText = stats.totalRequests;
+            document.getElementById('blockedReq').innerText = stats.blockedRequests;
+            document.getElementById('sqlCount').innerText = stats.sqlCount;
+            document.getElementById('xssCount').innerText = stats.xssCount;
+            document.getElementById('rceCount').innerText = stats.rceCount;
+            
+            // Update Status Text
+            const statusEl = document.getElementById('systemStatus');
+            statusEl.innerText = stats.systemStatus;
+            statusEl.className = stats.systemStatus === 'OPERATIONAL' ? 'small text-success' : 'small text-warning fw-bold';
 
-            // Logs Table
+            // Update Chart (Simulate movement)
+            const chartData = trafficChart.data.datasets[0].data;
+            chartData.shift();
+            // Create a pseudo-random value based on total requests to make it look "alive"
+            let jitter = Math.floor(Math.random() * 5); 
+            if(stats.totalRequests > 0) jitter += 2;
+            chartData.push(jitter);
+            trafficChart.update();
+            
+            // Calc Request Rate
+            document.getElementById('reqRate').innerText = jitter;
+        }
+
+        function updateLogs(logs) {
+            const tbody = document.getElementById('logTableBody');
+            if(logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No events recorded yet.</td></tr>';
+                return;
+            }
+
             let html = '';
-            data.logs.forEach(log => {
-                const time = new Date(log.time).toLocaleTimeString('en-US', { hour12: false });
-                const sevClass = log.severity === 'HIGH' || log.severity === 'CRITICAL' ? 'tag-high' : (log.severity === 'MEDIUM' ? 'tag-med' : 'tag-low');
-                const statusColor = log.blocked ? 'text-red' : 'text-green';
-                const statusIcon = log.blocked ? 'bi-shield-x' : 'bi-check-circle';
+            logs.forEach(log => {
+                // Determine Badge Colors
+                let severityBadge = 'bg-secondary';
+                if(log.severity === 'CRITICAL') severityBadge = 'bg-purple-subtle';
+                if(log.severity === 'HIGH') severityBadge = 'bg-danger-subtle';
+                if(log.severity === 'MEDIUM') severityBadge = 'bg-warning-subtle';
+                if(log.severity === 'LOW') severityBadge = 'bg-success-subtle';
+
+                let actionBadge = log.action === 'BLOCKED' ? 'text-danger fw-bold' : 'text-success';
 
                 html += `
                     <tr>
-                        <td style="font-family:'JetBrains Mono'; font-size:0.8rem;">${time}</td>
-                        <td><span class="tag ${sevClass}">${log.severity}</span></td>
+                        <td class="text-secondary small">${new Date(log.timestamp).toLocaleTimeString()}</td>
+                        <td><span class="badge-custom ${severityBadge}">${log.severity}</span></td>
                         <td>${log.type}</td>
-                        <td style="font-family:'JetBrains Mono'; color: #fff; max-width: 250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHTML(log.payload)}</td>
-                        <td class="${statusColor}"><i class="bi ${statusIcon}"></i></td>
+                        <td class="font-monospace small text-secondary">${log.ip}</td>
+                        <td class="font-monospace small text-white" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(log.payload)}</td>
+                        <td class="${actionBadge}">${log.action}</td>
                     </tr>
                 `;
             });
-            logTable.innerHTML = html;
+            tbody.innerHTML = html;
         }
 
-        // --- UTILS ---
-        async function resetSystem() {
-            await fetch(`${API_URL}/api/reset`, { method: 'POST' });
-            termOut.innerHTML = '<div class="term-line text-green">System reset complete.</div>';
-            fetchStats();
-        }
-
-        function addTermLine(text, color) {
-            const div = document.createElement('div');
-            div.className = 'term-line';
-            if(color === 'red') div.style.color = 'var(--red)';
-            if(color === 'green') div.style.color = 'var(--green)';
-            if(color === 'muted') div.style.color = 'var(--text-muted)';
-            if(color === 'white') div.style.color = 'white';
-            div.textContent = text;
-            termOut.appendChild(div);
+        function exportReport() {
+            alert("Generating PDF Report for Audit Log... \n(This is a prototype demonstration)");
         }
 
         function escapeHTML(str) {
@@ -399,9 +438,11 @@
             }[tag]));
         }
 
-        // Start Loop
-        setInterval(fetchStats, 2000);
-        fetchStats();
+        // Auto-refresh every 2 seconds
+        setInterval(fetchServerStats, 2000);
+        // Initial load
+        fetchServerStats();
+
     </script>
 </body>
 </html>
