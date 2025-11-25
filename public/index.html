@@ -3,279 +3,270 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WAF Console | Enterprise Security</title>
+    <title>WAF Enterprise Console | Security Ops</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         :root {
-            --sidebar-width: 260px;
-            --primary-bg: #1a1d21;
-            --secondary-bg: #22252a;
-            --accent-color: #3b82f6;
-            --text-muted: #9ca3af;
-            --border-color: #2d3748;
-            --success-color: #10b981;
-            --danger-color: #ef4444;
-            --warning-color: #f59e0b;
+            --sidebar-width: 250px;
+            --bg-dark: #0f1115;      /* Ultra Dark Background */
+            --bg-panel: #181b21;     /* Card Background */
+            --border-color: #2a2e35;
+            --primary: #3b82f6;      /* Blue */
+            --success: #10b981;      /* Green */
+            --danger: #ef4444;       /* Red */
+            --warning: #f59e0b;      /* Orange */
+            --purple: #8b5cf6;       /* Purple for RCE */
         }
 
         body {
-            background-color: var(--primary-bg);
-            color: #e5e7eb;
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-dark);
+            color: #d1d5db;
+            font-family: 'Inter', sans-serif;
             overflow-x: hidden;
         }
 
         /* --- SIDEBAR --- */
         .sidebar {
             width: var(--sidebar-width);
-            background-color: var(--secondary-bg);
+            background-color: var(--bg-panel);
             border-right: 1px solid var(--border-color);
             position: fixed;
             height: 100vh;
-            top: 0;
-            left: 0;
-            padding: 20px;
-            z-index: 1000;
-        }
-
-        .brand-logo {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: white;
-            margin-bottom: 2rem;
+            padding: 24px;
             display: flex;
-            align-items: center;
-            gap: 10px;
+            flex-direction: column;
+            z-index: 100;
         }
 
-        .nav-link {
-            color: var(--text-muted);
-            padding: 12px 15px;
-            border-radius: 6px;
-            margin-bottom: 5px;
+        .brand {
+            color: white;
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-item {
+            color: #9ca3af;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            text-decoration: none;
             display: flex;
             align-items: center;
             gap: 12px;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             transition: all 0.2s;
         }
 
-        .nav-link:hover, .nav-link.active {
+        .nav-item:hover, .nav-item.active {
             background-color: rgba(59, 130, 246, 0.1);
-            color: var(--accent-color);
+            color: var(--primary);
         }
 
-        /* --- MAIN CONTENT --- */
+        /* --- MAIN AREA --- */
         .main-content {
             margin-left: var(--sidebar-width);
-            padding: 30px;
+            padding: 32px;
         }
 
-        /* --- CARDS & PANELS --- */
-        .dashboard-card {
-            background-color: var(--secondary-bg);
+        /* --- DASHBOARD CARDS --- */
+        .cyber-card {
+            background-color: var(--bg-panel);
             border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 20px;
+            border-radius: 12px;
+            padding: 24px;
             height: 100%;
+            transition: transform 0.2s;
         }
-
-        .card-title {
-            color: var(--text-muted);
+        
+        .metric-label {
+            color: #9ca3af;
             font-size: 0.85rem;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.05em;
             font-weight: 600;
-            margin-bottom: 15px;
         }
 
         .metric-value {
-            font-size: 1.8rem;
+            font-size: 2.2rem;
             font-weight: 700;
             color: white;
+            margin-top: 8px;
         }
 
-        /* --- TABLE STYLES --- */
+        /* --- INPUT TERMINAL --- */
+        .terminal-input {
+            background-color: #000;
+            border: 1px solid #333;
+            color: var(--success);
+            font-family: 'JetBrains Mono', monospace;
+            padding: 12px;
+        }
+        .terminal-input:focus {
+            background-color: #050505;
+            border-color: var(--primary);
+            color: var(--success);
+            box-shadow: none;
+        }
+
+        /* --- LOG TABLE --- */
         .table-dark-custom {
             --bs-table-bg: transparent;
-            --bs-table-color: #e5e7eb;
-            --bs-table-border-color: var(--border-color);
         }
-        
-        .table th {
+        .table-dark-custom th {
+            color: #6b7280;
+            font-weight: 600;
             font-size: 0.8rem;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-muted);
-            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .table-dark-custom td {
+            color: #d1d5db;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+            font-size: 0.9rem;
         }
 
         /* --- BADGES --- */
-        .badge-status {
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-        .badge-blocked { background-color: rgba(239, 68, 68, 0.2); color: var(--danger-color); }
-        .badge-allowed { background-color: rgba(16, 185, 129, 0.2); color: var(--success-color); }
-        .badge-sql { background-color: rgba(245, 158, 11, 0.2); color: var(--warning-color); border: 1px solid rgba(245, 158, 11, 0.3); }
-        .badge-xss { background-color: rgba(139, 92, 246, 0.2); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.3); }
+        .badge-custom { padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
+        .bg-danger-subtle { background: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); }
+        .bg-success-subtle { background: rgba(16, 185, 129, 0.15); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2); }
+        .bg-warning-subtle { background: rgba(245, 158, 11, 0.15); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.2); }
+        .bg-purple-subtle { background: rgba(139, 92, 246, 0.15); color: var(--purple); border: 1px solid rgba(139, 92, 246, 0.2); }
 
-        /* --- UTILS --- */
-        .status-dot { height: 8px; width: 8px; background-color: var(--success-color); border-radius: 50%; display: inline-block; box-shadow: 0 0 8px var(--success-color); }
-        .console-input {
-            background-color: #0f1114;
-            border: 1px solid var(--border-color);
-            color: white;
-            font-family: 'Courier New', Courier, monospace;
-        }
-        .console-input:focus {
-            background-color: #0f1114;
-            color: white;
-            border-color: var(--accent-color);
-            box-shadow: none;
-        }
     </style>
 </head>
 <body>
 
     <div class="sidebar">
-        <div class="brand-logo">
-            <i class="bi bi-shield-check text-primary"></i> SHIELD<span class="text-primary">WAF</span>
+        <div class="brand">
+            <i class="bi bi-shield-lock-fill text-primary"></i> WAF<span class="fw-light">CONSOLE</span>
         </div>
-        <nav class="nav flex-column">
-            <a class="nav-link active" href="#"><i class="bi bi-speedometer2"></i> Dashboard</a>
-            <a class="nav-link" href="#"><i class="bi bi-list-task"></i> Access Logs</a>
-            <a class="nav-link" href="#"><i class="bi bi-sliders"></i> Security Rules</a>
-            <a class="nav-link" href="#"><i class="bi bi-gear"></i> System Settings</a>
+        <nav>
+            <a href="#" class="nav-item active"><i class="bi bi-grid-1x2-fill"></i> Overview</a>
+            <a href="#" class="nav-item"><i class="bi bi-activity"></i> Live Traffic</a>
+            <a href="#" class="nav-item"><i class="bi bi-file-earmark-code"></i> Attack Logs</a>
+            <a href="#" class="nav-item"><i class="bi bi-gear"></i> Rulesets</a>
         </nav>
         
-        <div class="mt-auto pt-5">
-            <div class="dashboard-card p-3 bg-dark bg-opacity-50">
-                <small class="text-muted d-block mb-2">System Status</small>
-                <div class="d-flex align-items-center gap-2">
-                    <span class="status-dot"></span>
-                    <span class="fw-bold text-white">Operational</span>
+        <div class="mt-auto">
+            <div class="p-3 rounded bg-dark border border-secondary border-opacity-25">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="spinner-grow spinner-grow-sm text-success" role="status"></span>
+                    <span class="small fw-bold text-white">SYSTEM ONLINE</span>
                 </div>
-                <small class="text-muted" style="font-size: 0.75rem;">Uptime: 14d 2h 12m</small>
+                <div class="small text-muted" id="systemStatus">Operational</div>
             </div>
         </div>
     </div>
 
     <div class="main-content">
         
-        <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-5">
             <div>
-                <h4 class="fw-bold mb-1">Security Overview</h4>
-                <p class="text-muted mb-0">Real-time threat monitoring and mitigation console.</p>
+                <h3 class="fw-bold text-white mb-1">Security Dashboard</h3>
+                <p class="text-secondary mb-0">Real-time threat mitigation and analysis.</p>
             </div>
-            <div class="d-flex gap-3">
-                <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
-                <button class="btn btn-primary btn-sm"><i class="bi bi-download"></i> Export Report</button>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-secondary btn-sm" onclick="fetchServerStats()"><i class="bi bi-arrow-clockwise"></i> Sync</button>
+                <button class="btn btn-primary btn-sm"><i class="bi bi-file-pdf"></i> Export Report</button>
             </div>
         </div>
 
         <div class="row g-4 mb-4">
             <div class="col-md-3">
-                <div class="dashboard-card">
-                    <div class="card-title"><i class="bi bi-globe me-2"></i>Total Requests</div>
+                <div class="cyber-card">
+                    <div class="metric-label">Total Requests</div>
                     <div class="metric-value" id="totalReq">0</div>
-                    <small class="text-success"><i class="bi bi-arrow-up"></i> +12% vs last hour</small>
+                    <div class="mt-2 small text-secondary">
+                        <i class="bi bi-arrow-up text-success"></i> <span id="reqRate">0</span> req/sec
+                    </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="dashboard-card">
-                    <div class="card-title text-danger"><i class="bi bi-shield-x me-2"></i>Threats Blocked</div>
-                    <div class="metric-value text-danger" id="blockedReq">0</div>
-                    <small class="text-muted">Filtering active</small>
+                <div class="cyber-card" style="border-left: 4px solid var(--danger);">
+                    <div class="metric-label text-danger">Attacks Blocked</div>
+                    <div class="metric-value" id="blockedReq">0</div>
+                    <div class="mt-2 small text-secondary">Global filtering active</div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="dashboard-card">
-                    <div class="card-title text-warning"><i class="bi bi-bug me-2"></i>SQL Injection</div>
+                <div class="cyber-card">
+                    <div class="metric-label text-warning">SQL Injections</div>
                     <div class="metric-value text-warning" id="sqlCount">0</div>
-                    <small class="text-muted">High severity</small>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="dashboard-card">
-                    <div class="card-title text-info"><i class="bi bi-code-slash me-2"></i>XSS Attempts</div>
-                    <div class="metric-value text-info" id="xssCount">0</div>
-                    <small class="text-muted">Medium severity</small>
+                <div class="cyber-card">
+                    <div class="metric-label text-info">XSS & RCE</div>
+                    <div class="d-flex gap-3 align-items-baseline">
+                        <div class="metric-value text-info" id="xssCount">0</div>
+                        <div class="small text-secondary">/ <span id="rceCount" style="color: var(--purple)">0</span> RCE</div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="row g-4 mb-4">
             <div class="col-lg-8">
-                <div class="dashboard-card">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="card-title mb-0">Traffic Volume (Last 60 Seconds)</div>
-                        <span class="badge bg-secondary bg-opacity-25 text-secondary">Live</span>
+                <div class="cyber-card">
+                    <div class="d-flex justify-content-between mb-4">
+                        <h6 class="text-white fw-bold">Incoming Traffic Volume</h6>
+                        <span class="badge bg-success-subtle">LIVE MONITORING</span>
                     </div>
-                    <canvas id="trafficChart" height="120"></canvas>
+                    <canvas id="trafficChart" style="max-height: 250px;"></canvas>
                 </div>
             </div>
 
             <div class="col-lg-4">
-                <div class="dashboard-card">
-                    <div class="card-title">Manual Request Inspection</div>
-                    <p class="text-muted small">Simulate incoming traffic to test WAF rulesets.</p>
+                <div class="cyber-card">
+                    <h6 class="text-white fw-bold mb-3">Threat Simulator</h6>
+                    <p class="small text-secondary mb-3">Test WAF rules against specific payloads.</p>
                     
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">Payload / Query String</label>
-                        <input type="text" id="userInput" class="form-control console-input" placeholder="' OR 1=1 --">
-                    </div>
+                    <input type="text" id="userInput" class="form-control terminal-input mb-3" placeholder="Enter payload..." autocomplete="off">
                     
-                    <button class="btn btn-primary w-100 mb-3" onclick="sendToWAF()">
-                        <i class="bi bi-play-fill"></i> Execute Request
+                    <button class="btn btn-primary w-100 mb-4" onclick="sendToWAF()">
+                        <i class="bi bi-shield-check"></i> Analyze Request
                     </button>
 
-                    <hr class="border-secondary">
-                    
                     <div class="d-grid gap-2">
-                        <button class="btn btn-outline-danger btn-sm text-start" onclick="fillAttack('sqli')">
-                            <i class="bi bi-lightning-fill me-2"></i> Load SQLi Payload
+                        <button class="btn btn-outline-secondary btn-sm text-start" onclick="fillAttack('sqli')">
+                            <span class="text-warning me-2">●</span> SQL Injection Test
                         </button>
-                        <button class="btn btn-outline-warning btn-sm text-start" onclick="fillAttack('xss')">
-                            <i class="bi bi-code-square me-2"></i> Load XSS Payload
+                        <button class="btn btn-outline-secondary btn-sm text-start" onclick="fillAttack('xss')">
+                            <span class="text-info me-2">●</span> XSS Script Test
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm text-start" onclick="fillAttack('rce')">
+                            <span style="color: var(--purple)" class="me-2">●</span> RCE / Root Access
                         </button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="dashboard-card">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <div class="card-title mb-0">Recent Event Logs</div>
-                <div class="input-group input-group-sm" style="width: 200px;">
-                    <span class="input-group-text bg-dark border-secondary text-muted"><i class="bi bi-search"></i></span>
-                    <input type="text" class="form-control bg-dark border-secondary text-white" placeholder="Search logs...">
-                </div>
-            </div>
+        <div class="cyber-card">
+            <h6 class="text-white fw-bold mb-3">Recent Security Events</h6>
             <div class="table-responsive">
-                <table class="table table-dark-custom table-hover align-middle">
+                <table class="table table-dark-custom">
                     <thead>
                         <tr>
-                            <th>Timestamp</th>
-                            <th>Source IP</th>
-                            <th>Request Payload</th>
-                            <th>Rule Triggered</th>
+                            <th>Time</th>
+                            <th>Severity</th>
+                            <th>Attack Type</th>
+                            <th>Origin IP</th>
+                            <th>Payload Content</th>
                             <th>Action</th>
                         </tr>
                     </thead>
                     <tbody id="logTableBody">
                         <tr>
-                            <td class="text-muted small">Waiting for data...</td>
-                            <td>-</td>
-                            <td>-</td>
-                            <td>-</td>
-                            <td>-</td>
+                            <td colspan="6" class="text-center text-muted py-4">Connecting to WAF Server...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -286,20 +277,18 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        const WAF_API_URL = 'https://waf-prototype-fy.onrender.com/api/check'; 
-
-        // --- Metrics State ---
-        let stats = { total: 0, blocked: 0, sqli: 0, xss: 0 };
-
-        // --- Initialize Chart.js ---
+        // CONFIG: Replace with your Render URL if hosted, or http://localhost:3000 for local
+        const API_URL = 'https://waf-prototype-fy.onrender.com'; 
+        
+        // --- CHART SETUP ---
         const ctx = document.getElementById('trafficChart').getContext('2d');
         const trafficChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: Array(10).fill(''), // 10 time points
+                labels: Array(20).fill(''),
                 datasets: [{
-                    label: 'Requests/sec',
-                    data: Array(10).fill(0),
+                    label: 'Requests',
+                    data: Array(20).fill(0),
                     borderColor: '#3b82f6',
                     backgroundColor: 'rgba(59, 130, 246, 0.1)',
                     borderWidth: 2,
@@ -312,31 +301,20 @@
                 responsive: true,
                 plugins: { legend: { display: false } },
                 scales: {
-                    x: { grid: { display: false } },
-                    y: { 
-                        grid: { color: '#2d3748' },
-                        beginAtZero: true,
-                        suggestedMax: 10
-                    }
-                }
+                    x: { display: false },
+                    y: { grid: { color: '#2a2e35' }, beginAtZero: true }
+                },
+                animation: { duration: 0 } // Performance optimization
             }
         });
 
-        // --- Helper: Simulate Traffic for Chart ---
-        setInterval(() => {
-            const randomVal = Math.floor(Math.random() * 5) + (stats.total > 0 ? 2 : 0); // Add jitter
-            const data = trafficChart.data.datasets[0].data;
-            data.shift();
-            data.push(randomVal);
-            trafficChart.update();
-        }, 2000);
+        // --- CORE FUNCTIONS ---
 
-
-        // --- UI Interactions ---
         function fillAttack(type) {
             const input = document.getElementById('userInput');
             if(type === 'sqli') input.value = "' OR 1=1 --";
-            if(type === 'xss') input.value = "<script>alert('pwned')</script>";
+            if(type === 'xss') input.value = "<script>alert('Stealing Cookies')</script>";
+            if(type === 'rce') input.value = "; cat /etc/passwd";
         }
 
         async function sendToWAF() {
@@ -344,96 +322,105 @@
             const payload = input.value;
             if(!payload) return;
 
-            // 1. Update UI (Optimistic)
-            stats.total++;
-            document.getElementById('totalReq').innerText = stats.total;
-
             try {
-                const response = await fetch(WAF_API_URL, {
+                // Send Request
+                await fetch(`${API_URL}/api/check`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ userInput: payload })
                 });
 
-                const data = await response.json();
-                
-                // 2. Handle Response
-                handleWAFResult(payload, data);
+                // Clear input and immediately refresh dash
+                input.value = '';
+                fetchServerStats();
 
             } catch (error) {
-                console.error("API Error", error);
-                // Fallback for demo purposes if API is down
-                handleWAFResult(payload, { 
-                    status: 'error', 
-                    message: 'API Unreachable' 
-                });
+                alert('Error connecting to WAF Server');
             }
         }
 
-        function handleWAFResult(payload, data) {
-            const table = document.getElementById('logTableBody');
-            const row = document.createElement('tr');
-            
-            // Determine styles based on status
-            let actionBadge = '';
-            let ruleBadge = '<span class="text-muted">-</span>';
-            
-            if (data.status === 'blocked') {
-                stats.blocked++;
-                actionBadge = `<span class="badge badge-blocked">BLOCKED (403)</span>`;
+        async function fetchServerStats() {
+            try {
+                const response = await fetch(`${API_URL}/api/stats`);
+                const data = await response.json();
                 
-                // Simple keyword check to guess attack type for metrics (since API might just say "Blocked")
-                if (payload.includes('OR') || payload.includes('UNION') || payload.includes('SELECT')) {
-                    stats.sqli++;
-                    ruleBadge = `<span class="badge badge-sql">SQL Injection</span>`;
-                } else if (payload.includes('<script>') || payload.includes('alert')) {
-                    stats.xss++;
-                    ruleBadge = `<span class="badge badge-xss">XSS Pattern</span>`;
-                } else {
-                    ruleBadge = `<span class="text-danger">Malicious Signature</span>`;
-                }
-            } else if (data.status === 'safe') {
-                actionBadge = `<span class="badge badge-allowed">ALLOWED (200)</span>`;
-                ruleBadge = `<span class="text-success">Clean Traffic</span>`;
-            } else {
-                actionBadge = `<span class="badge bg-secondary">ERROR</span>`;
+                updateDashboard(data.stats);
+                updateLogs(data.logs);
+
+            } catch (error) {
+                console.error("Connection lost:", error);
+            }
+        }
+
+        function updateDashboard(stats) {
+            // Update Numbers
+            document.getElementById('totalReq').innerText = stats.totalRequests;
+            document.getElementById('blockedReq').innerText = stats.blockedRequests;
+            document.getElementById('sqlCount').innerText = stats.sqlCount;
+            document.getElementById('xssCount').innerText = stats.xssCount;
+            document.getElementById('rceCount').innerText = stats.rceCount;
+            
+            // Update Status Text
+            const statusEl = document.getElementById('systemStatus');
+            statusEl.innerText = stats.systemStatus;
+            statusEl.className = stats.systemStatus === 'OPERATIONAL' ? 'small text-success' : 'small text-warning fw-bold';
+
+            // Update Chart (Simulate movement)
+            const chartData = trafficChart.data.datasets[0].data;
+            chartData.shift();
+            // Create a pseudo-random value based on total requests to make it look "alive"
+            let jitter = Math.floor(Math.random() * 5); 
+            if(stats.totalRequests > 0) jitter += 2;
+            chartData.push(jitter);
+            trafficChart.update();
+            
+            // Calc Request Rate
+            document.getElementById('reqRate').innerText = jitter;
+        }
+
+        function updateLogs(logs) {
+            const tbody = document.getElementById('logTableBody');
+            if(logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No events recorded yet.</td></tr>';
+                return;
             }
 
-            // Update Metric Counters
-            document.getElementById('blockedReq').innerText = stats.blocked;
-            document.getElementById('sqlCount').innerText = stats.sqli;
-            document.getElementById('xssCount').innerText = stats.xss;
+            let html = '';
+            logs.forEach(log => {
+                // Determine Badge Colors
+                let severityBadge = 'bg-secondary';
+                if(log.severity === 'CRITICAL') severityBadge = 'bg-purple-subtle';
+                if(log.severity === 'HIGH') severityBadge = 'bg-danger-subtle';
+                if(log.severity === 'MEDIUM') severityBadge = 'bg-warning-subtle';
+                if(log.severity === 'LOW') severityBadge = 'bg-success-subtle';
 
-            // Add Row to Table (Top)
-            row.innerHTML = `
-                <td class="text-white small">${new Date().toLocaleTimeString()}</td>
-                <td class="text-muted small">192.168.1.105</td>
-                <td class="text-white" style="font-family:monospace; max-width: 200px; overflow:hidden; text-overflow:ellipsis;">${escapeHTML(payload)}</td>
-                <td>${ruleBadge}</td>
-                <td>${actionBadge}</td>
-            `;
+                let actionBadge = log.action === 'BLOCKED' ? 'text-danger fw-bold' : 'text-success';
 
-            // Remove empty state if present
-            if (table.rows[0] && table.rows[0].cells[0].innerText === 'Waiting for data...') {
-                table.innerHTML = '';
-            }
-            
-            table.insertBefore(row, table.firstChild);
-            
-            // Limit table to 10 rows
-            if (table.rows.length > 10) table.deleteRow(10);
+                html += `
+                    <tr>
+                        <td class="text-secondary small">${new Date(log.timestamp).toLocaleTimeString()}</td>
+                        <td><span class="badge-custom ${severityBadge}">${log.severity}</span></td>
+                        <td>${log.type}</td>
+                        <td class="font-monospace small text-secondary">${log.ip}</td>
+                        <td class="font-monospace small text-white" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(log.payload)}</td>
+                        <td class="${actionBadge}">${log.action}</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
         }
 
         function escapeHTML(str) {
-            return str.replace(/[&<>'"]/g, 
-                tag => ({
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    "'": '&#39;',
-                    '"': '&quot;'
-                }[tag]));
+            return str.replace(/[&<>'"]/g, tag => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+            }[tag]));
         }
+
+        // Auto-refresh every 2 seconds
+        setInterval(fetchServerStats, 2000);
+        // Initial load
+        fetchServerStats();
+
     </script>
 </body>
 </html>
