@@ -1,7 +1,7 @@
 {
-  "name": "waf-prototype-fy",
-  "version": "1.0.0",
-  "description": "A basic web application firewall prototype for a final year project.",
+  "name": "waf-enterprise-prototype",
+  "version": "2.0.0",
+  "description": "Enterprise-grade Web Application Firewall prototype with real-time analytics.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
