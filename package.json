@@ -1,7 +1,7 @@
 {
-  "name": "waf-enterprise-prototype",
-  "version": "3.0.0",
-  "description": "Enterprise-grade Web Application Firewall prototype with real-time analytics.",
+  "name": "waf-simple-prototype",
+  "version": "1.0.0",
+  "description": "Simple WAF Prototype",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
