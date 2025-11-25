@@ -3,273 +3,353 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WAF Enterprise Console | Security Ops</title>
+    <title>AIGuard WAF | Enterprise Console</title>
     
+    <!-- Dependencies -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         :root {
-            --sidebar-width: 250px;
-            --bg-dark: #0f1115;      /* Ultra Dark Background */
-            --bg-panel: #181b21;     /* Card Background */
-            --border-color: #2a2e35;
-            --primary: #3b82f6;      /* Blue */
-            --success: #10b981;      /* Green */
-            --danger: #ef4444;       /* Red */
-            --warning: #f59e0b;      /* Orange */
-            --purple: #8b5cf6;       /* Purple for RCE */
+            --bg-body: #09090b;
+            --bg-card: #131316;
+            --bg-sidebar: #0f0f11;
+            --primary: #6366f1;
+            --accent: #8b5cf6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --border: #27272a;
         }
 
         body {
-            background-color: var(--bg-dark);
-            color: #d1d5db;
-            font-family: 'Inter', sans-serif;
-            overflow-x: hidden;
+            background-color: var(--bg-body);
+            color: #e4e4e7;
+            font-family: 'Outfit', sans-serif;
+            overflow: hidden; /* Prevent body scroll, let content scroll */
         }
 
         /* --- SIDEBAR --- */
         .sidebar {
-            width: var(--sidebar-width);
-            background-color: var(--bg-panel);
-            border-right: 1px solid var(--border-color);
-            position: fixed;
+            width: 260px;
             height: 100vh;
-            padding: 24px;
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border);
+            padding: 20px;
             display: flex;
             flex-direction: column;
-            z-index: 100;
+            position: fixed;
         }
 
         .brand {
-            color: white;
+            font-size: 1.4rem;
             font-weight: 700;
-            font-size: 1.2rem;
             margin-bottom: 2rem;
-            letter-spacing: -0.5px;
+            background: linear-gradient(45deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .nav-item {
-            color: #9ca3af;
+        .nav-btn {
+            background: transparent;
+            border: none;
+            color: #a1a1aa;
             padding: 12px 16px;
+            text-align: left;
             border-radius: 8px;
-            margin-bottom: 4px;
-            text-decoration: none;
+            margin-bottom: 5px;
+            transition: all 0.2s;
+            font-size: 0.95rem;
             display: flex;
             align-items: center;
             gap: 12px;
-            font-size: 0.9rem;
-            transition: all 0.2s;
+            width: 100%;
         }
 
-        .nav-item:hover, .nav-item.active {
-            background-color: rgba(59, 130, 246, 0.1);
-            color: var(--primary);
+        .nav-btn:hover { background: rgba(255,255,255,0.05); color: white; }
+        .nav-btn.active { 
+            background: linear-gradient(90deg, rgba(99, 102, 241, 0.1), transparent); 
+            color: var(--primary); 
+            border-left: 3px solid var(--primary);
         }
 
-        /* --- MAIN AREA --- */
-        .main-content {
-            margin-left: var(--sidebar-width);
-            padding: 32px;
+        /* --- CONTENT AREA --- */
+        .main-wrapper {
+            margin-left: 260px;
+            height: 100vh;
+            overflow-y: auto;
+            padding: 30px;
         }
 
-        /* --- DASHBOARD CARDS --- */
-        .cyber-card {
-            background-color: var(--bg-panel);
-            border: 1px solid var(--border-color);
+        /* --- CARDS --- */
+        .glass-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
             border-radius: 12px;
-            padding: 24px;
+            padding: 20px;
             height: 100%;
-            transition: transform 0.2s;
-        }
-        
-        .metric-label {
-            color: #9ca3af;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            font-weight: 600;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
         }
 
-        .metric-value {
-            font-size: 2.2rem;
-            font-weight: 700;
-            color: white;
-            margin-top: 8px;
+        .stat-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
         }
+        .stat-val { font-size: 2rem; font-weight: 700; margin-top: 5px; color: white; }
+        .stat-label { font-size: 0.85rem; color: #a1a1aa; font-weight: 600; text-transform: uppercase; }
 
-        /* --- INPUT TERMINAL --- */
-        .terminal-input {
-            background-color: #000;
+        /* --- TERMINAL --- */
+        .terminal-box {
+            background: #000;
             border: 1px solid #333;
-            color: var(--success);
+            border-radius: 8px;
+            padding: 15px;
             font-family: 'JetBrains Mono', monospace;
-            padding: 12px;
+            min-height: 200px;
+            color: #10b981;
         }
-        .terminal-input:focus {
-            background-color: #050505;
-            border-color: var(--primary);
-            color: var(--success);
-            box-shadow: none;
-        }
-
-        /* --- LOG TABLE --- */
-        .table-dark-custom {
-            --bs-table-bg: transparent;
-        }
-        .table-dark-custom th {
-            color: #6b7280;
-            font-weight: 600;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .table-dark-custom td {
-            color: #d1d5db;
-            border-bottom: 1px solid var(--border-color);
-            vertical-align: middle;
-            font-size: 0.9rem;
+        .cmd-input {
+            background: transparent;
+            border: none;
+            color: white;
+            width: 80%;
+            outline: none;
+            font-family: inherit;
         }
 
-        /* --- BADGES --- */
-        .badge-custom { padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
-        .bg-danger-subtle { background: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); }
-        .bg-success-subtle { background: rgba(16, 185, 129, 0.15); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2); }
-        .bg-warning-subtle { background: rgba(245, 158, 11, 0.15); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.2); }
-        .bg-purple-subtle { background: rgba(139, 92, 246, 0.15); color: var(--purple); border: 1px solid rgba(139, 92, 246, 0.2); }
+        /* --- TABLE --- */
+        .table-custom {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+        }
+        .table-custom th { color: #71717a; font-size: 0.8rem; text-transform: uppercase; text-align: left; padding: 10px; }
+        .table-custom td { background: #18181b; padding: 12px; font-size: 0.9rem; border-top: 1px solid #27272a; border-bottom: 1px solid #27272a; }
+        .table-custom tr td:first-child { border-top-left-radius: 6px; border-bottom-left-radius: 6px; border-left: 1px solid #27272a; }
+        .table-custom tr td:last-child { border-top-right-radius: 6px; border-bottom-right-radius: 6px; border-right: 1px solid #27272a; }
 
+        /* --- UTILS --- */
+        .badge-s { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; }
+        .b-high { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+        .b-med { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+        .b-safe { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
+    <!-- SIDEBAR -->
     <div class="sidebar">
         <div class="brand">
-            <i class="bi bi-shield-lock-fill text-primary"></i> WAF<span class="fw-light">CONSOLE</span>
+            <i class="bi bi-shield-fill-check"></i> AIGuard
         </div>
         <nav>
-            <a href="#" class="nav-item active"><i class="bi bi-grid-1x2-fill"></i> Overview</a>
-            <a href="#" class="nav-item"><i class="bi bi-activity"></i> Live Traffic</a>
-            <a href="#" class="nav-item"><i class="bi bi-file-earmark-code"></i> Attack Logs</a>
-            <a href="#" class="nav-item"><i class="bi bi-gear"></i> Rulesets</a>
+            <button class="nav-btn active" onclick="showSection('dashboard', this)">
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </button>
+            <button class="nav-btn" onclick="showSection('terminal', this)">
+                <i class="bi bi-terminal"></i> Live Terminal
+            </button>
+            <button class="nav-btn" onclick="showSection('logs', this)">
+                <i class="bi bi-list-columns-reverse"></i> Audit Logs
+            </button>
+            <button class="nav-btn" onclick="showSection('settings', this)">
+                <i class="bi bi-sliders"></i> Settings
+            </button>
         </nav>
         
-        <div class="mt-auto">
-            <div class="p-3 rounded bg-dark border border-secondary border-opacity-25">
-                <div class="d-flex align-items-center gap-2 mb-2">
-                    <span class="spinner-grow spinner-grow-sm text-success" role="status"></span>
-                    <span class="small fw-bold text-white">SYSTEM ONLINE</span>
+        <div style="margin-top: auto;">
+            <div class="glass-card p-3" style="background: rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.2);">
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width: 8px; height: 8px; background: var(--success); border-radius: 50%; box-shadow: 0 0 10px var(--success);"></div>
+                    <span style="font-size: 0.8rem; font-weight: 600; color: white;">Engine Active</span>
                 </div>
-                <div class="small text-muted" id="systemStatus">Operational</div>
             </div>
         </div>
     </div>
 
-    <div class="main-content">
+    <!-- MAIN CONTENT -->
+    <div class="main-wrapper">
         
-        <div class="d-flex justify-content-between align-items-center mb-5">
-            <div>
-                <h3 class="fw-bold text-white mb-1">Security Dashboard</h3>
-                <p class="text-secondary mb-0">Real-time threat mitigation and analysis.</p>
-            </div>
+        <!-- HEADER -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold m-0" id="pageTitle">Security Dashboard</h3>
             <div class="d-flex gap-2">
-                <button class="btn btn-outline-secondary btn-sm" onclick="fetchServerStats()"><i class="bi bi-arrow-clockwise"></i> Sync</button>
-                <button class="btn btn-primary btn-sm"><i class="bi bi-file-pdf"></i> Export Report</button>
+                <button class="btn btn-dark border-secondary btn-sm" onclick="resetSystem()">
+                    <i class="bi bi-arrow-counterclockwise"></i> Reset
+                </button>
+                <button class="btn btn-primary btn-sm" onclick="exportReport()">
+                    <i class="bi bi-download"></i> Report
+                </button>
             </div>
         </div>
 
-        <div class="row g-4 mb-4">
-            <div class="col-md-3">
-                <div class="cyber-card">
-                    <div class="metric-label">Total Requests</div>
-                    <div class="metric-value" id="totalReq">0</div>
-                    <div class="mt-2 small text-secondary">
-                        <i class="bi bi-arrow-up text-success"></i> <span id="reqRate">0</span> req/sec
+        <!-- SECTION: DASHBOARD -->
+        <div id="section-dashboard">
+            <div class="row g-4 mb-4">
+                <div class="col-md-3">
+                    <div class="glass-card stat-card">
+                        <div>
+                            <div class="stat-label">Total Traffic</div>
+                            <div class="stat-val" id="d-total">0</div>
+                        </div>
+                        <i class="bi bi-globe text-secondary fs-4"></i>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="glass-card stat-card" style="border-bottom: 3px solid var(--danger);">
+                        <div>
+                            <div class="stat-label">Threats Blocked</div>
+                            <div class="stat-val text-danger" id="d-blocked">0</div>
+                        </div>
+                        <i class="bi bi-shield-x text-danger fs-4"></i>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="glass-card stat-card">
+                        <div>
+                            <div class="stat-label">SQL Injections</div>
+                            <div class="stat-val text-warning" id="d-sql">0</div>
+                        </div>
+                        <i class="bi bi-database-lock text-warning fs-4"></i>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="glass-card stat-card">
+                        <div>
+                            <div class="stat-label">XSS / RCE</div>
+                            <div class="stat-val text-info" id="d-xss">0</div>
+                        </div>
+                        <i class="bi bi-code-slash text-info fs-4"></i>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="cyber-card" style="border-left: 4px solid var(--danger);">
-                    <div class="metric-label text-danger">Attacks Blocked</div>
-                    <div class="metric-value" id="blockedReq">0</div>
-                    <div class="mt-2 small text-secondary">Global filtering active</div>
+
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="glass-card">
+                        <h6 class="text-secondary mb-3 text-uppercase small fw-bold">Traffic Velocity (Real-time)</h6>
+                        <canvas id="mainChart" height="120"></canvas>
+                    </div>
                 </div>
-            </div>
-            <div class="col-md-3">
-                <div class="cyber-card">
-                    <div class="metric-label text-warning">SQL Injections</div>
-                    <div class="metric-value text-warning" id="sqlCount">0</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="cyber-card">
-                    <div class="metric-label text-info">XSS & RCE</div>
-                    <div class="d-flex gap-3 align-items-baseline">
-                        <div class="metric-value text-info" id="xssCount">0</div>
-                        <div class="small text-secondary">/ <span id="rceCount" style="color: var(--purple)">0</span> RCE</div>
+                <div class="col-lg-4">
+                    <div class="glass-card">
+                        <h6 class="text-secondary mb-3 text-uppercase small fw-bold">System Health</h6>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="small">CPU Usage</span>
+                            <span class="small text-success">12%</span>
+                        </div>
+                        <div class="progress mb-3" style="height: 6px; background: #27272a;">
+                            <div class="progress-bar bg-success" style="width: 12%"></div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="small">Memory</span>
+                            <span class="small text-primary">45%</span>
+                        </div>
+                        <div class="progress mb-3" style="height: 6px; background: #27272a;">
+                            <div class="progress-bar bg-primary" style="width: 45%"></div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="small">Rule Latency</span>
+                            <span class="small text-warning">24ms</span>
+                        </div>
+                        <div class="progress mb-3" style="height: 6px; background: #27272a;">
+                            <div class="progress-bar bg-warning" style="width: 60%"></div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="row g-4 mb-4">
-            <div class="col-lg-8">
-                <div class="cyber-card">
-                    <div class="d-flex justify-content-between mb-4">
-                        <h6 class="text-white fw-bold">Incoming Traffic Volume</h6>
-                        <span class="badge bg-success-subtle">LIVE MONITORING</span>
+        <!-- SECTION: TERMINAL -->
+        <div id="section-terminal" class="hidden">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="glass-card">
+                        <div class="terminal-box">
+                            <div class="mb-2 text-secondary">root@waf-server:~$ ./waf-daemon --listen</div>
+                            <div class="mb-2 text-success">Daemon started. Listening on port 80...</div>
+                            <div id="terminal-output"></div>
+                            <div class="d-flex mt-2">
+                                <span class="text-primary me-2">➜</span>
+                                <input type="text" id="termInput" class="cmd-input" placeholder="Enter payload to simulate attack..." autocomplete="off">
+                            </div>
+                        </div>
+                        <button class="btn btn-primary mt-3 w-100" onclick="submitTerminal()">Execute Packet</button>
                     </div>
-                    <canvas id="trafficChart" style="max-height: 250px;"></canvas>
                 </div>
-            </div>
-
-            <div class="col-lg-4">
-                <div class="cyber-card">
-                    <h6 class="text-white fw-bold mb-3">Threat Simulator</h6>
-                    <p class="small text-secondary mb-3">Test WAF rules against specific payloads.</p>
-                    
-                    <input type="text" id="userInput" class="form-control terminal-input mb-3" placeholder="Enter payload..." autocomplete="off">
-                    
-                    <button class="btn btn-primary w-100 mb-4" onclick="sendToWAF()">
-                        <i class="bi bi-shield-check"></i> Analyze Request
-                    </button>
-
-                    <div class="d-grid gap-2">
-                        <button class="btn btn-outline-secondary btn-sm text-start" onclick="fillAttack('sqli')">
-                            <span class="text-warning me-2">●</span> SQL Injection Test
-                        </button>
-                        <button class="btn btn-outline-secondary btn-sm text-start" onclick="fillAttack('xss')">
-                            <span class="text-info me-2">●</span> XSS Script Test
-                        </button>
-                        <button class="btn btn-outline-secondary btn-sm text-start" onclick="fillAttack('rce')">
-                            <span style="color: var(--purple)" class="me-2">●</span> RCE / Root Access
-                        </button>
+                <div class="col-md-4">
+                    <div class="glass-card">
+                        <h6 class="text-uppercase small fw-bold text-secondary mb-3">Quick Payloads</h6>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-danger text-start" onclick="fillTerm('sqli')">
+                                <i class="bi bi-lightning-fill"></i> SQL Injection
+                            </button>
+                            <button class="btn btn-outline-warning text-start" onclick="fillTerm('xss')">
+                                <i class="bi bi-code-square"></i> Cross-Site Scripting
+                            </button>
+                            <button class="btn btn-outline-info text-start" onclick="fillTerm('rce')">
+                                <i class="bi bi-terminal"></i> Command Injection
+                            </button>
+                            <button class="btn btn-outline-success text-start" onclick="fillTerm('safe')">
+                                <i class="bi bi-shield-check"></i> Safe Request
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="cyber-card">
-            <h6 class="text-white fw-bold mb-3">Recent Security Events</h6>
-            <div class="table-responsive">
-                <table class="table table-dark-custom">
+        <!-- SECTION: LOGS -->
+        <div id="section-logs" class="hidden">
+            <div class="glass-card">
+                <table class="table-custom">
                     <thead>
                         <tr>
-                            <th>Time</th>
+                            <th>Timestamp</th>
                             <th>Severity</th>
-                            <th>Attack Type</th>
-                            <th>Origin IP</th>
-                            <th>Payload Content</th>
-                            <th>Action</th>
+                            <th>Type</th>
+                            <th>Payload</th>
+                            <th>Status</th>
                         </tr>
                     </thead>
                     <tbody id="logTableBody">
-                        <tr>
-                            <td colspan="6" class="text-center text-muted py-4">Connecting to WAF Server...</td>
-                        </tr>
+                        <!-- JS fills this -->
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- SECTION: SETTINGS -->
+        <div id="section-settings" class="hidden">
+            <div class="glass-card" style="max-width: 600px;">
+                <h5 class="mb-4">Global Configuration</h5>
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="s1" checked>
+                    <label class="form-check-label" for="s1">Enable SQL Injection Filters</label>
+                </div>
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="s2" checked>
+                    <label class="form-check-label" for="s2">Enable XSS Sanitization</label>
+                </div>
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="s3" checked>
+                    <label class="form-check-label" for="s3">Block Tor Exit Nodes</label>
+                </div>
+                <div class="form-check form-switch mb-4">
+                    <input class="form-check-input" type="checkbox" id="s4">
+                    <label class="form-check-label" for="s4">Debug Mode (Verbose Logging)</label>
+                </div>
+                <button class="btn btn-success" onclick="alert('Configuration Saved!')">Save Changes</button>
             </div>
         </div>
 
@@ -277,24 +357,54 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // CONFIG: Replace with your Render URL if hosted, or http://localhost:3000 for local
-        const API_URL = 'https://waf-prototype-fy.onrender.com'; 
-        
+        // --- API CONFIG ---
+        // If hosted on Render/Vercel, replace with your URL. 
+        // If local, use 'http://localhost:3000' or just '' if serving from same origin
+        const API = 'https://waf-prototype-fy.onrender.com'; 
+
+        // --- NAVIGATION LOGIC ---
+        function showSection(id, btn) {
+            // Hide all sections
+            ['dashboard', 'terminal', 'logs', 'settings'].forEach(s => {
+                document.getElementById('section-' + s).classList.add('hidden');
+            });
+            // Show selected
+            document.getElementById('section-' + id).classList.remove('hidden');
+            
+            // Update Title
+            const titles = {
+                dashboard: 'Security Dashboard',
+                terminal: 'Live Threat Simulator',
+                logs: 'Event Audit Logs',
+                settings: 'System Configuration'
+            };
+            document.getElementById('pageTitle').innerText = titles[id];
+
+            // Update Sidebar Buttons
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            if(btn) btn.classList.add('active');
+        }
+
         // --- CHART SETUP ---
-        const ctx = document.getElementById('trafficChart').getContext('2d');
-        const trafficChart = new Chart(ctx, {
+        const ctx = document.getElementById('mainChart').getContext('2d');
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(99, 102, 241, 0.5)');
+        gradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
+
+        const mainChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: Array(20).fill(''),
+                labels: Array(15).fill(''),
                 datasets: [{
                     label: 'Requests',
-                    data: Array(20).fill(0),
-                    borderColor: '#3b82f6',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    data: Array(15).fill(0),
+                    borderColor: '#6366f1',
+                    backgroundColor: gradient,
                     borderWidth: 2,
                     fill: true,
                     tension: 0.4,
-                    pointRadius: 0
+                    pointRadius: 0,
+                    pointHoverRadius: 4
                 }]
             },
             options: {
@@ -302,112 +412,111 @@
                 plugins: { legend: { display: false } },
                 scales: {
                     x: { display: false },
-                    y: { grid: { color: '#2a2e35' }, beginAtZero: true }
+                    y: { grid: { color: '#27272a' }, beginAtZero: true }
                 },
-                animation: { duration: 0 } // Performance optimization
+                animation: false
             }
         });
 
-        // --- CORE FUNCTIONS ---
+        // --- CORE LOGIC ---
 
-        function fillAttack(type) {
-            const input = document.getElementById('userInput');
-            if(type === 'sqli') input.value = "' OR 1=1 --";
-            if(type === 'xss') input.value = "<script>alert('Stealing Cookies')</script>";
-            if(type === 'rce') input.value = "; cat /etc/passwd";
+        function fillTerm(type) {
+            const el = document.getElementById('termInput');
+            if(type === 'sqli') el.value = "' OR 1=1 --";
+            if(type === 'xss') el.value = "<script>alert('pwned')</script>";
+            if(type === 'rce') el.value = "; cat /etc/passwd";
+            if(type === 'safe') el.value = "GET /products/123";
+            submitTerminal(); // Auto submit for better UX
         }
 
-        async function sendToWAF() {
-            const input = document.getElementById('userInput');
-            const payload = input.value;
-            if(!payload) return;
+        async function submitTerminal() {
+            const input = document.getElementById('termInput');
+            const val = input.value;
+            if(!val) return;
+
+            // 1. Add to Terminal UI immediately
+            const termOut = document.getElementById('terminal-output');
+            termOut.innerHTML += `<div class="mb-1">➜ <span class="text-white">${escapeHTML(val)}</span></div>`;
+            termOut.innerHTML += `<div class="mb-2 text-secondary">Analyzing packet signature...</div>`;
 
             try {
-                // Send Request
-                await fetch(`${API_URL}/api/check`, {
+                const res = await fetch(`${API}/api/check`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userInput: payload })
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ userInput: val })
                 });
+                const data = await res.json();
 
-                // Clear input and immediately refresh dash
-                input.value = '';
-                fetchServerStats();
-
-            } catch (error) {
-                alert('Error connecting to WAF Server');
-            }
-        }
-
-        async function fetchServerStats() {
-            try {
-                const response = await fetch(`${API_URL}/api/stats`);
-                const data = await response.json();
+                // 2. Show Result in Terminal
+                if(data.status === 'blocked') {
+                    termOut.innerHTML += `<div class="mb-2 text-danger fw-bold">[BLOCK] Threat Detected: ${data.log.type}</div>`;
+                } else {
+                    termOut.innerHTML += `<div class="mb-2 text-success fw-bold">[PASS] Request forwarded to origin.</div>`;
+                }
                 
-                updateDashboard(data.stats);
-                updateLogs(data.logs);
+                // Clear and Fetch
+                input.value = '';
+                fetchStats(); // Update dashboard numbers
 
-            } catch (error) {
-                console.error("Connection lost:", error);
+            } catch(e) {
+                termOut.innerHTML += `<div class="mb-2 text-danger">Error: Could not reach WAF server.</div>`;
             }
         }
 
-        function updateDashboard(stats) {
-            // Update Numbers
-            document.getElementById('totalReq').innerText = stats.totalRequests;
-            document.getElementById('blockedReq').innerText = stats.blockedRequests;
-            document.getElementById('sqlCount').innerText = stats.sqlCount;
-            document.getElementById('xssCount').innerText = stats.xssCount;
-            document.getElementById('rceCount').innerText = stats.rceCount;
-            
-            // Update Status Text
-            const statusEl = document.getElementById('systemStatus');
-            statusEl.innerText = stats.systemStatus;
-            statusEl.className = stats.systemStatus === 'OPERATIONAL' ? 'small text-success' : 'small text-warning fw-bold';
-
-            // Update Chart (Simulate movement)
-            const chartData = trafficChart.data.datasets[0].data;
-            chartData.shift();
-            // Create a pseudo-random value based on total requests to make it look "alive"
-            let jitter = Math.floor(Math.random() * 5); 
-            if(stats.totalRequests > 0) jitter += 2;
-            chartData.push(jitter);
-            trafficChart.update();
-            
-            // Calc Request Rate
-            document.getElementById('reqRate').innerText = jitter;
+        async function fetchStats() {
+            try {
+                const res = await fetch(`${API}/api/stats`);
+                const data = await res.json();
+                updateUI(data);
+            } catch(e) { console.log(e); }
         }
 
-        function updateLogs(logs) {
+        function updateUI(data) {
+            // Stats
+            document.getElementById('d-total').innerText = data.stats.total;
+            document.getElementById('d-blocked').innerText = data.stats.blocked;
+            document.getElementById('d-sql').innerText = data.stats.sql;
+            document.getElementById('d-xss').innerText = data.stats.xss + data.stats.rce;
+
+            // Chart Jitter (Fake Live Data)
+            const arr = mainChart.data.datasets[0].data;
+            arr.shift();
+            let val = Math.floor(Math.random() * 5);
+            if(data.stats.total > 0) val += 3; // Activity spike
+            arr.push(val);
+            mainChart.update();
+
+            // Logs Table
             const tbody = document.getElementById('logTableBody');
-            if(logs.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No events recorded yet.</td></tr>';
-                return;
-            }
-
             let html = '';
-            logs.forEach(log => {
-                // Determine Badge Colors
-                let severityBadge = 'bg-secondary';
-                if(log.severity === 'CRITICAL') severityBadge = 'bg-purple-subtle';
-                if(log.severity === 'HIGH') severityBadge = 'bg-danger-subtle';
-                if(log.severity === 'MEDIUM') severityBadge = 'bg-warning-subtle';
-                if(log.severity === 'LOW') severityBadge = 'bg-success-subtle';
-
-                let actionBadge = log.action === 'BLOCKED' ? 'text-danger fw-bold' : 'text-success';
+            data.logs.forEach(log => {
+                let badge = log.severity === 'HIGH' || log.severity === 'CRITICAL' ? 'b-high' : (log.severity === 'MEDIUM' ? 'b-med' : 'b-safe');
+                let statusColor = log.blocked ? 'text-danger' : 'text-success';
+                let statusText = log.blocked ? 'BLOCKED' : 'ALLOWED';
 
                 html += `
                     <tr>
-                        <td class="text-secondary small">${new Date(log.timestamp).toLocaleTimeString()}</td>
-                        <td><span class="badge-custom ${severityBadge}">${log.severity}</span></td>
-                        <td>${log.type}</td>
-                        <td class="font-monospace small text-secondary">${log.ip}</td>
-                        <td class="font-monospace small text-white" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(log.payload)}</td>
-                        <td class="${actionBadge}">${log.action}</td>
+                        <td class="text-secondary">${new Date(log.time).toLocaleTimeString()}</td>
+                        <td><span class="badge-s ${badge}">${log.severity}</span></td>
+                        <td class="text-white">${log.type}</td>
+                        <td class="text-secondary font-monospace" style="max-width: 200px; overflow:hidden; text-overflow:ellipsis;">${escapeHTML(log.payload)}</td>
+                        <td class="${statusColor} fw-bold">${statusText}</td>
                     </tr>
                 `;
             });
-            tbody.innerHTML = html;
+            tbody.innerHTML = html || '<tr><td colspan="5" class="text-center text-secondary">No logs yet</td></tr>';
+        }
+
+        async function resetSystem() {
+            if(confirm("Flush all logs and reset counters?")) {
+                await fetch(`${API}/api/reset`, {method: 'POST'});
+                fetchStats();
+            }
+        }
+
+        function exportReport() {
+            const now = new Date().toLocaleString();
+            alert(`Generating Report...\n\nStatus: Complete\nTimestamp: ${now}\nFormat: PDF\n\n(Simulated Download Started)`);
         }
 
         function escapeHTML(str) {
@@ -416,10 +525,9 @@
             }[tag]));
         }
 
-        // Auto-refresh every 2 seconds
-        setInterval(fetchServerStats, 2000);
-        // Initial load
-        fetchServerStats();
+        // Init
+        setInterval(fetchStats, 2000);
+        fetchStats();
 
     </script>
 </body>
