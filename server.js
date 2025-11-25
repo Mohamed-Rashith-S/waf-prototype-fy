@@ -1,85 +1,135 @@
-// A. IMPORT NECESSARY MODULES
+// A. IMPORT MODULES
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors'); 
 
 const app = express();
-// Render automatically assigns a PORT. We use process.env.PORT for deployment, 
-// and 3000 as a fallback for local testing.
 const PORT = process.env.PORT || 3000; 
 
-// B. ADD MIDDLEWARE
-// Use CORS to allow requests from your Vercel-hosted frontend domain.
+// B. MIDDLEWARE
 app.use(cors()); 
-// Use body-parser to read JSON data sent by the frontend (the user input).
 app.use(bodyParser.json()); 
 
-// C. THE WAF CHECKER FUNCTION (The security logic)
+// --- C. SERVER STATE (In-Memory Database) ---
+// This keeps track of data as long as the server is running.
+let serverStats = {
+    totalRequests: 0,
+    blockedRequests: 0,
+    sqlCount: 0,
+    xssCount: 0,
+    rceCount: 0,
+    systemStatus: 'OPERATIONAL'
+};
+
+// Store the last 50 logs for the dashboard
+let requestLogs = [];
+
+// --- D. SECURITY LOGIC (WAF ENGINE) ---
 function wafCheck(input) {
     const lowerInput = input.toLowerCase();
     
-    // --- SQLi Detection Rules (Checks for common SQL keywords) ---
-    const sqliPatterns = [
-        'select * from', 
-        'union select', 
-        '--' // SQL comment often used to bypass checks
-    ];
-
+    // 1. SQL Injection (High Severity)
+    const sqliPatterns = ['select *', 'union select', 'drop table', ' or 1=1', '--', 'insert into', 'update users'];
     for (const pattern of sqliPatterns) {
         if (lowerInput.includes(pattern)) {
-            return { isBlocked: true, reason: 'SQL Injection Signature Detected' };
+            return { blocked: true, type: 'SQLi', severity: 'HIGH', reason: 'SQL Injection Signature' };
         }
     }
 
-    // --- XSS Detection Rules (Checks for common script/HTML tags) ---
-    const xssPatterns = [
-        '<script', 
-        'javascript:', 
-        'onerror=',
-        '<img>' 
-    ];
-
+    // 2. XSS (Medium Severity)
+    const xssPatterns = ['<script', 'javascript:', 'onerror=', 'onload=', 'alert(', 'document.cookie'];
     for (const pattern of xssPatterns) {
         if (lowerInput.includes(pattern)) {
-            return { isBlocked: true, reason: 'Cross-Site Scripting (XSS) Tag Detected' };
+            return { blocked: true, type: 'XSS', severity: 'MEDIUM', reason: 'Cross-Site Scripting Pattern' };
         }
     }
 
-    // If no malicious patterns are matched
-    return { isBlocked: false, reason: "" }; 
+    // 3. RCE & Path Traversal (Critical Severity)
+    const rcePatterns = ['; ls', '&&', '|', 'sudo', 'cmd.exe', '../', '..\\', '/etc/passwd', 'whoami'];
+    for (const pattern of rcePatterns) {
+        if (lowerInput.includes(pattern)) {
+            return { blocked: true, type: 'RCE', severity: 'CRITICAL', reason: 'Remote Command Execution' };
+        }
+    }
+
+    return { blocked: false, type: 'Clean', severity: 'LOW', reason: 'Valid Request' }; 
 }
 
-// D. THE CORE API ROUTE
+// --- E. API ROUTES ---
+
+// 1. TRAFFIC ANALYSIS ROUTE
 app.post('/api/check', (req, res) => {
-    // Get the user input from the request body
     const userInput = req.body.userInput || '';
+    
+    // Simulate Client IP for realism
+    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '192.168.1.' + Math.floor(Math.random() * 255);
 
-    // 1. Run the WAF check
-    const checkResult = wafCheck(userInput);
+    serverStats.totalRequests++;
 
-    if (checkResult.isBlocked) {
-        // 2. BLOCKED: Attack detected
-        console.log(`ATTACK DETECTED: ${checkResult.reason} - Input: ${userInput}`);
-        // Log to database would go here!
+    const result = wafCheck(userInput);
+
+    // Create Log Entry
+    const logEntry = {
+        id: Date.now(),
+        timestamp: new Date().toISOString(),
+        ip: clientIp,
+        payload: userInput,
+        action: result.blocked ? 'BLOCKED' : 'ALLOWED',
+        type: result.type,
+        severity: result.severity
+    };
+
+    // Update History
+    requestLogs.unshift(logEntry); 
+    if (requestLogs.length > 50) requestLogs.pop(); // Keep log size manageable
+
+    if (result.blocked) {
+        serverStats.blockedRequests++;
+        if (result.type === 'SQLi') serverStats.sqlCount++;
+        if (result.type === 'XSS') serverStats.xssCount++;
+        if (result.type === 'RCE') serverStats.rceCount++;
+
+        // Change system status dynamically based on threat level
+        if(serverStats.blockedRequests > 10) serverStats.systemStatus = 'ELEVATED THREAT';
+
+        console.log(`[BLOCKED] IP: ${clientIp} | Type: ${result.type}`);
+        
         return res.status(403).json({ 
             status: 'blocked', 
-            message: `ACCESS DENIED by WAF. Reason: ${checkResult.reason}. This event has been logged.` 
+            message: result.reason,
+            log: logEntry
         });
     }
 
-    // 3. SAFE: Input passed the check
+    console.log(`[ALLOWED] IP: ${clientIp} | Clean Traffic`);
+    
     res.json({ 
         status: 'safe', 
-        message: `Input passed WAF check successfully. Processing: "${userInput}"` 
+        message: 'Request Allowed',
+        log: logEntry
     });
 });
 
-// E. Basic route for health checks (Render needs this)
-app.get('/', (req, res) => {
-    res.send('WAF Backend is running.');
+// 2. DASHBOARD DATA ROUTE (The Frontend calls this to update charts)
+app.get('/api/stats', (req, res) => {
+    res.json({
+        stats: serverStats,
+        logs: requestLogs
+    });
 });
 
-// F. START THE SERVER
+// 3. RESET ROUTE (Optional: to clear stats for a fresh demo)
+app.post('/api/reset', (req, res) => {
+    serverStats = { totalRequests: 0, blockedRequests: 0, sqlCount: 0, xssCount: 0, rceCount: 0, systemStatus: 'OPERATIONAL' };
+    requestLogs = [];
+    res.json({ message: 'System Reset' });
+});
+
+app.get('/', (req, res) => {
+    res.send('WAF Enterprise Backend is Online v2.0');
+});
+
+// F. START SERVER
 app.listen(PORT, () => {
-    console.log(`WAF Prototype running on port ${PORT}`);
+    console.log(`>>> WAF Server running on port ${PORT}`);
 });
